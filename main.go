@@ -121,10 +121,11 @@ func main() {
 		}{Content: note.Analyse(notes), Date: date})
 	})
 	g.GET("/getComic/:id", func(c *gin.Context) {
+		pageNum := JMComic.GetPageNum(c.Param("id"))
+		println(pageNum)
 		c.HTML(http.StatusOK, "comic.tmpl", gin.H{
-			"id":       c.Param("id"),
-			"hostname": config.Settings.Server.Hostname,
-			"port":     config.Settings.Server.Port,
+			"id":      c.Param("id"),
+			"pageNum": pageNum,
 		})
 	})
 	g.GET("/getComic/:id/:page", func(c *gin.Context) {

@@ -109,7 +109,7 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 				return res, err
 			}
 		}
-		res, err = JMComic.BenziBot(ml, ws, mjson)
+		res, err = JMComic.BenziBot(ml, mjson)
 		if res != "" {
 			return res, err
 		}

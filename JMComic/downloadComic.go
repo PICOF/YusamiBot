@@ -63,7 +63,7 @@ func GetSexyComicPage(id string, i int) ComicPage {
 	}
 	return ComicPage{0, imageToBase64(img), i - 1}
 }
-func getPageNum(id string) int {
+func GetPageNum(id string) int {
 	var get *http.Response
 	var err error
 	left := 0

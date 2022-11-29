@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"unicode"
 )
 
@@ -41,7 +42,7 @@ var aphorism = []string{
 	"我能奖励自己一整天\n\t——史蒂夫·俊杰",
 }
 
-func BenziBot(msg []string, ws *websocket.Conn, mjson returnStruct.Message) (string, error) {
+func BenziBot(msg []string, mjson returnStruct.Message) (string, error) {
 	var res string
 	if len(msg) < 2 || (msg[0] != "看本子" && msg[0] != "搜本子") {
 		return "", nil
@@ -64,7 +65,10 @@ func BenziBot(msg []string, ws *websocket.Conn, mjson returnStruct.Message) (str
 			}
 			fallthrough
 		default:
-			encode, err := qrcode.Encode("http://"+config.Settings.Server.Hostname+":"+config.Settings.Server.Port+"/comic/"+mjson.RawMessage[len(msg[0])+1:]+"/1", qrcode.Medium, 256)
+			query := strings.ReplaceAll(mjson.Message[len(msg[0])+1:], "&amp;", "&")
+			query = strings.ReplaceAll(query, "&#91;", "[")
+			query = strings.ReplaceAll(query, "&#93;", "]")
+			encode, err := qrcode.Encode("http://"+config.Settings.Server.Hostname+":"+config.Settings.Server.Port+"/comic/"+query+"/1", qrcode.Medium, 256)
 			if err != nil {
 				myUtil.ErrLog.Println("生成本子搜索二维码时出现异常！err:", err)
 				return "初始化失败啦！", err
