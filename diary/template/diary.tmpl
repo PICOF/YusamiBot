@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="referrer" content="never">
+    <title>某人的日记本</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+    <link rel="stylesheet" href="/static/css/diary.css">
+</head>
+<body>
+        <div class="board">
+            <div class="header" style="margin: 10px auto">
+                <img title="notebook"  src="/static/image/notebook.png" style="zoom: 10%">
+                <div id="title" style="display: inline-block;font-weight: bold;font-size: 28px;vertical-align: top;margin-top: 20px">{{ .Date }} 的日记记录</div>
+            </div>
+            <div class="content" style="padding: 0 12%;margin-bottom: 40px">
+                {{ range $i,$obj := .Content }}
+                    <div>{{ $obj }}</div>
+                {{ end }}
+            </div>
+        </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+msgFilterMode:
+  groupFilterMode: 2 #0不过滤，1采用黑名单方式，2采用白名单方式
+  privateFilterMode: 2
+botName:
+  name: Isara
+  fullName: 19岁现役JD Isara
+  lowerCasedName: isara
+  id: 2096820879
+dataSource:
+  port: 27017
+  auth: false
+  username: null
+  password: null
+  databaseName: Lealra
+  maxPoolSize: 10
+  timeout: 100 #单位：秒
+server:
+  port: 8081
+  hostname: 127.0.0.1
+function:
+  repeat: true
+  makeChoice: true
+  privateDiary: false
+logs:
+  msgLogsRefreshCycle: 48 #單位：小時，每小時自動清理
+  errLogsRefreshCycle: 3 #單位：天，且新一天到來時就會刪除之前的日志
+auth:
+  admin:
+    - 1730483316
+aiPaint:
+  api: http://91.216.169.75:5010
+  token:
+    - he7y2nsXlGdizr5IE8ZPkpo0KNCmMuWB
+    - 0yexhmuQVgtNX8O2kM46HivJU7dnSqZE
+bangumi:
+  bangumiSearch: true
+  maxPoolSize: 3
+setu:
+  setuGroupSender: true
+  api: https://api.lolicon.app/setu/v2 # https://lolisuki.cc/api/setu/v1

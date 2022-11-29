@@ -1,0 +1,137 @@
+body{
+    background-color: rgba(237, 239, 247, 1);
+    margin: 0;
+    padding-bottom: 30px;
+}
+*{
+    box-sizing: border-box;
+}
+#title{
+    width: 100%;
+    text-align: center;
+    margin-bottom: 20px;
+}
+.title{
+    font-weight: bold;
+    margin: 10px 0;
+    text-align: center;
+}
+#search{
+    width: fit-content;
+    margin: 0 auto 20px;
+}
+#search input.button{
+    background-color: #77b0ff;
+    color: white;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    height: 30px;
+    width: 50px;
+    border-radius: 10px;
+}
+#search input.query{
+    border-color: cornflowerblue;
+    border-radius: 8px;
+    height: 24px;
+    position: relative;
+    bottom: 2px;
+}
+#notice{
+    text-align: center;
+    font-size: x-large;
+    color: crimson;
+}
+.author{
+    font-weight: bold;
+    font-size:small;
+    margin: 10px 0;
+    text-align: center;
+}
+.author a {
+    font-size:medium;
+    color: #ffbb43;
+    text-decoration: none;
+}
+.tags{
+    color: black;
+    font-weight: bold;
+    font-size:small;
+    margin: 10px 0;
+    text-align: center;
+}
+.tags a {
+    font-size:medium;
+    color: gray;
+    text-decoration: none;
+}
+.id{
+    font-family: 方正锐正黑简体_纤, serif;
+    font-weight: bold;
+    font-size:small;
+    text-align: center;
+}
+.id a{
+    text-decoration: none;
+    font-size:medium;
+    color: cornflowerblue;
+}
+.board{
+    width: 92%;
+    height: fit-content;
+    margin: 50px auto;
+    background-color: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 3px 4px 0 rgba(156,156,156,0.664);
+}
+.content img{
+    margin-top: 20px;
+    margin-left: 25%;
+    width: 50%;
+    border-radius: 20px;
+    box-shadow: 0 0 16px rgb(0 0 0/50%);
+}
+.page-sidebar{
+    position: fixed;
+    top: 1%;
+    left: 6px;
+    overflow: hidden;
+}
+.page-sidebar .title{
+    text-align: center;
+    line-height: 26px;
+    font-weight: bold;
+    width: 60px;
+    height: 26px;
+    border-radius: 10px;
+    background-color: cornflowerblue;
+    color: white;
+    box-shadow: 0 3px 4px 0 rgba(156,156,156,0.664);
+}
+ul.page{
+    margin: 0;
+    padding: 0;
+    overflow: scroll;
+    height: 424px;
+}
+ul.page::-webkit-scrollbar {
+    display: none;
+}
+ul.page li{
+    margin-top: 4px;
+    list-style-type: none;
+    text-align: center;
+    line-height: 26px;
+    font-weight: bold;
+    width: 36px;
+    height: 26px;
+    border-radius: 10px;
+    background-color: white;
+    box-shadow: 0 3px 4px 0 rgba(156,156,156,0.664);
+}
+ul.page a{
+    color: cornflowerblue;
+    display: block;
+    text-decoration: none;
+}

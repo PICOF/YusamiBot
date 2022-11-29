@@ -1,0 +1,26 @@
+body{
+    background-color: rgba(237, 239, 247, 1);
+    margin: 0;
+    padding-bottom: 30px;
+}
+*{
+    box-sizing: border-box;
+}
+.board{
+    width: 92%;
+    height: fit-content;
+    margin: 50px auto;
+    background-color: white;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 3px 4px 0 rgba(156,156,156,0.664);
+}
+.content img{
+    width: 100%;
+}
+div.time{
+    color: cornflowerblue;
+    margin: 10px -6%;
+    font-size: x-large;
+    font-weight: bold;
+}

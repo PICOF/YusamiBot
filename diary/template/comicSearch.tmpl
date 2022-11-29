@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="referrer" content="never">
+    <title>搜索结果</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+    <link rel="stylesheet" href="/static/css/comicSearch.css">
+</head>
+<body>
+        <div class="board">
+            <div class="header" style="margin: 10px auto">
+                <div id="title" style="display: inline-block;font-weight: bold;font-size: 28px;vertical-align: top;margin-top: 20px">{{ .Topic }} 的搜索结果</div>
+            </div>
+            <div id="search">
+                <form action="/comic" method="get">
+                    <input type="text" name="query" autocomplete="on" class="query">
+                    <input type="submit" value="搜索" class="button">
+                </form>
+            </div>
+            <div class="content" style="padding: 0 12%;margin-bottom: 40px">
+                {{if .Err}}
+                    <div id="notice">{{.Err}}</div>
+                {{else}}
+                    {{ range $i,$obj := .Content }}
+                        <div>{{ $obj }}</div>
+                    {{ end }}
+                {{end}}
+            </div>
+            <div class="page-sidebar">
+                <div class="title">PAGE</div>
+                <ul class="page"></ul>
+            </div>
+        </div>
+</body>
+<script>
+    const topic = {{ .Topic }}
+    const pageNum = {{ .Page }}
+    const page = document.querySelector('ul.page')
+    function loadFailed(e){
+        let src = e.src
+        console.log(src)
+        e.src='/static/image/loadfailed.png'
+        e.onclick=function(){
+            e.src=src
+            e.onclick=null
+        }
+    }
+    function search(){
+        var input = document.querySelector('#search input').value
+        window.location.replace('/comic/'+input+'/1')
+    }
+    for(let i=1;i<=pageNum;i++){
+        var pageChild = document.createElement('li')
+        var link = document.createElement('a')
+        if(i.toString()==={{.Index}}){
+            link.style.color='white'
+            pageChild.style.backgroundColor='cornflowerblue'
+        }
+        link.innerText=i.toString()
+        link.href='/comic/'+topic+'/'+i
+        pageChild.appendChild(link)
+        page.appendChild(pageChild)
+    }
+</script>
+</html>

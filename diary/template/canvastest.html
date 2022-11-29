@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>由老色皮倾情呈现</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.js"></script>
+</head>
+<body>
+<div class="board">
+    <img id="img" src=>
+    <canvas id="canvas"></canvas>
+</div>
+</body>
+<script src="../static/js/md5.js"></script>
+<script>
+    console.log("Welcome")
+    const aid=269108
+    const img = document.getElementById("img");
+    const index = '00016'
+    img.src ="https://cdn-msp.18comic.org/media/photos/269108/"+index+".webp"
+    img.dataset['index']=index.toString()
+    img.addEventListener('load', (e) => {
+        onImageLoaded(e.target)
+    });
+    function onImageLoaded(e) {
+        console.log("Image loaded")
+        var t = document.getElementById('canvas');
+        var a = t.getContext("2d")
+            , n = e.width
+            , d = e.naturalWidth
+            , i = e.naturalHeight;
+        console.log(n, d, i)
+        t.width = d,
+            t.height = i,
+            t.style.width = n + "px",
+            t.style.display = "block";
+        var r = e.dataset['index']
+        console.log(get_num(aid, r))
+        for (var s = get_num(aid, r), l = i % s, o = d, m = 0; m < s; m++) {
+            var c = Math.floor(i / s)
+                , g = c * m
+                , h = i - c * (m + 1) - l;
+            0 === m ? c += l : g += l,
+                a.drawImage(e, 0, h, o, c, 0, g, o, c)
+        }
+        $(e).addClass("hide")
+    }
+    function get_num(e, t) {
+        var a = 10;
+        if (e >= 268850) {
+            var n = e + t;
+            switch (n = (n = (n = md5(n)).substr(-1)).charCodeAt(),
+                n %= 10) {
+                case 0:
+                    a = 2;
+                    break;
+                case 1:
+                    a = 4;
+                    break;
+                case 2:
+                    a = 6;
+                    break;
+                case 3:
+                    a = 8;
+                    break;
+                case 4:
+                    a = 10;
+                    break;
+                case 5:
+                    a = 12;
+                    break;
+                case 6:
+                    a = 14;
+                    break;
+                case 7:
+                    a = 16;
+                    break;
+                case 8:
+                    a = 18;
+                    break;
+                case 9:
+                    a = 20
+            }
+        }
+        return a
+    }
+</script>
+</html>
