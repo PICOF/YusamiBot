@@ -7,6 +7,7 @@ import (
 	"Lealra/returnStruct"
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"strconv"
@@ -18,11 +19,24 @@ func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error
 	if err != nil {
 		return nil, err
 	}
+	if mjson.PostType == "meta_event" {
+		switch mjson.MetaEventType {
+		case "heartbeat":
+			println("heartbeat")
+			return nil, nil
+		case "lifecycle":
+			myUtil.MsgLog.Println("lifecycle")
+			return nil, nil
+		}
+	}
 	if mjson.PostType == "message" {
+		if mjson.RawMessage == "" {
+			return nil, errors.New("消息中出现零长段，user_id=" + strconv.FormatInt(mjson.UserID, 10) + "，group_id=" + strconv.FormatInt(mjson.GroupID, 10))
+		}
 		ret := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{}}
 		if mjson.MessageType == "group" {
 			if !hasPermission(filterMode[0], mjson.GroupID, true) {
-				println("Group " + strconv.FormatInt(mjson.GroupID, 10) + " do not have permission")
+				myUtil.MsgLog.Println("Group " + strconv.FormatInt(mjson.GroupID, 10) + " do not have permission")
 				return nil, err
 			}
 			myUtil.MsgLog.Print(string(msg))
@@ -31,7 +45,7 @@ func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error
 			return resHandler(res, err, ret)
 		} else if mjson.MessageType == "private" {
 			if !hasPermission(filterMode[1], mjson.UserID, false) {
-				println("User " + strconv.FormatInt(mjson.UserID, 10) + " do not have permission")
+				myUtil.MsgLog.Println("User " + strconv.FormatInt(mjson.UserID, 10) + " do not have permission")
 				return nil, err
 			}
 			myUtil.MsgLog.Print(string(msg))

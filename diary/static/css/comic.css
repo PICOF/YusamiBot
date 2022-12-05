@@ -66,9 +66,10 @@ body{
     height: 420px;
     width: 100%;
     background-position: center;
-    background-size: contain;
+    background-size: cover;
     background-color: white;
     background-repeat: no-repeat;
+    text-indent: 114514px;
     box-shadow: 0 0 16px rgb(0 0 0/50%);
 }
 .content canvas{

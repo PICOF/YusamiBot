@@ -74,3 +74,11 @@ func SendNotice(mjson returnStruct.Message, ws *websocket.Conn, msg string) erro
 	WsLock.Unlock()
 	return err
 }
+func SendGroupMessage(ws *websocket.Conn, groupId int64, msg string) error {
+	v := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{Message: msg, GroupID: groupId}}
+	o, _ := json.Marshal(v)
+	WsLock.Lock()
+	err := ws.WriteMessage(returnStruct.MsgType, o)
+	WsLock.Unlock()
+	return err
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"Lealra/JMComic"
+	"Lealra/aiTalk"
 	"Lealra/config"
 	"Lealra/data"
 	"Lealra/handler"
@@ -40,6 +41,7 @@ func main() {
 	}(data.Db.Client(), context.TODO())
 	myUtil.SetLogger()
 	go myUtil.RenewLoggers()
+	aiTalk.GetCharacterList()
 	gin.DefaultWriter = io.MultiWriter(os.Stdout)
 	g := gin.Default()
 	g.LoadHTMLGlob("diary/template/*")

@@ -3,25 +3,26 @@ package returnStruct
 var MsgType = 1
 
 type Message struct {
-	Anonymous   interface{} `json:"anonymous"`
-	Font        int64       `json:"font"`
-	GroupID     int64       `json:"group_id"`
-	Message     string      `json:"message"`
-	MessageID   int64       `json:"message_id"`
-	MessageSeq  int64       `json:"message_seq"`
-	MessageType string      `json:"message_type"`
-	PostType    string      `json:"post_type"`
-	RawMessage  string      `json:"raw_message"`
-	SelfID      int64       `json:"self_id"`
-	Sender      Sender      `json:"sender"`
-	SubType     string      `json:"sub_type"`
-	Time        int64       `json:"time"`
-	UserID      int64       `json:"user_id"`
-	Echo        string      `json:"echo"`
-	RetData     Data        `json:"data"`
-	RetCode     int         `json:"retcode"`
-	Wording     string      `json:"wording"`
-	Content     string      `json:"content"`
+	Anonymous     interface{} `json:"anonymous"`
+	Font          int64       `json:"font"`
+	GroupID       int64       `json:"group_id"`
+	Message       string      `json:"message"`
+	MessageID     int64       `json:"message_id"`
+	MessageSeq    int64       `json:"message_seq"`
+	MessageType   string      `json:"message_type"`
+	PostType      string      `json:"post_type"`
+	MetaEventType string      `json:"meta_event_type"`
+	RawMessage    string      `json:"raw_message"`
+	SelfID        int64       `json:"self_id"`
+	Sender        Sender      `json:"sender"`
+	SubType       string      `json:"sub_type"`
+	Time          int64       `json:"time"`
+	UserID        int64       `json:"user_id"`
+	Echo          string      `json:"echo"`
+	RetData       Data        `json:"data"`
+	RetCode       int         `json:"retcode"`
+	Wording       string      `json:"wording"`
+	Content       string      `json:"content"`
 }
 
 type Data struct {

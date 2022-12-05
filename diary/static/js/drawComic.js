@@ -78,16 +78,16 @@ function get_num(e, t) {
     return a
 }
 function loadComic(){
-    delta+=5
-    for(let i=0;i<step&&index<pageNum;i++,index++){
+    for(let i=0;i<step&&index<pageNum;i++,index++,delta++){
         let img= document.createElement('img')
         img.className='page'
         img.dataset['index']=index.toString().padStart(5,'0')
         img.style.backgroundImage='url(\'/static/image/loading.jpg\')'
-        img.src="https://cdn-msp.18comic.org/media/photos/"+id+"/"+img.dataset['index']+".webp"
+        img.src="https://cdn-msp.jmcomic1.onl/media/photos/"+id+"/"+img.dataset['index']+".webp"
         img.onerror=function(){
+            console.log("Error loading")
             let src = this.src
-            this.src='/static/image/loadfailed.png'
+            this.style.backgroundImage='url(\'/static/image/loadfailed.png\')'
             this.onclick=function(){
                 this.src=src
                 this.onclick=null
@@ -103,14 +103,12 @@ function loadComic(){
     }
 }
 window.onscroll=function(){
-    console.log(delta)
-    if(index>=pageNum){
+    if(index>=pageNum&&delta===0){
         loadEnd()
         window.onscroll=null
     }
     if(document.body.clientHeight-document.documentElement.scrollTop<2100&&delta<=10){
         loadComic()
-        console.log('scroll loadComic')
     }
 }
 function loadStart(){

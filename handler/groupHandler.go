@@ -2,6 +2,7 @@ package handler
 
 import (
 	"Lealra/JMComic"
+	"Lealra/aiTalk"
 	"Lealra/bangumi"
 	"Lealra/config"
 	"Lealra/data"
@@ -35,6 +36,9 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 	m := mjson.RawMessage
 	var res string
 	var err error
+	if aiTalk.MsgHandler(ml, mjson, ws) {
+		return "", nil
+	}
 	if mflen == 1 {
 		if ml[0] == "读日记" {
 			res, err = Note(mjson.UserID, "", "", 1)
