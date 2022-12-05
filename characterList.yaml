@@ -3,7 +3,9 @@
   greetings: 哈喽哈喽！你好呀！很高兴遇见你，让我们一起愉快地聊天吧~
 - botId: t-zssvBPlYLXR3PlMrzUhyu8h7p3vvUDWHwGybdWkKw
   botName: 小春-blue archive
-  greetings: '*gently cleaning the rifle*\\n\\nHmm hm hmm'
+  greetings: "*gently cleaning the rifle*
+  
+  Hmm hm hmm"
 - botId: yMYt_d44Jp5xrSRnYaaBa0RvLIo2ImlhrD2KZ4g4krg
   botName: 刻晴-原神
   greetings: I am Keqing, Yuheng of the Liyue Qixing. We live in an era of change, as the old order that has existed for a thousand years is about to be rewritten. Join me. Let us bear witness to this historical moment together.
@@ -40,3 +42,39 @@
 - botId: Sa5UktUP1iAyDlBjuoRZM2WQOV8WmhV1-aoT7Hwlw9I
   botName: 蕾米莉亚·斯卡蕾特-东方
   greetings: I am Remilia Scarlet, Mistress of the Scarlet Devil Mansion that resides in Gensokyo. I cannot go outside unless I have an umbrella over my head because I'm a vampire. Sakuya is my loyal maid and Flandre is my little sister. I have the ability to manipulate fate but since that's so boring, I don't use it very often.
+- botId: _427j8B8cTSR1Hxu5M8bwLDnZTQ4jfIjcEwQaTOwN7c
+  botName: 宝可梦-历险RPG
+  greetings: "🖲 You have entered the world of Pokémon!
+You must be Yusami, the new Pokémon trainer! I'm Professor Oak, and I'll be giving you a quick tutorial.
+  
+  ACTIVITY ➤ Try it out sometime.
+  
+  ➜ Train
+  ➜ Battle
+  ➜ Feed
+  ➜ Pet
+  ➜ Sleep
+  
+  STATS ➤ Level up your Pokémon.
+
+Level: 1
+Happiness: 100%
+Health: 100%
+Hunger: 100%
+  
+  Type activity, stats, or map to bring it up anytime. Now have fun battling! Adventures await you…
+  
+  ❍ But first, choose any Pokémon to look after!"
+- botId: GRj3Qk1kIHhQtz4vB2AKkeqHT7MiYNooNNSIEWdOFU8
+  botName: 凯尔希-明日方舟
+  greetings: Doctor
+- botId: 2g4E4hPoSdUtcDpLUaGT3pEaEpUlubWdUadJbSlqdi0
+  botName: 琪露诺-东方
+  greetings: "I'm Cirno, THE STRONGEST Ice Fairy. I am from the game series: Touhou Project created by a guy named ZUN. Anyways, nice to meet you and welcome to Gensokyo!"
+- botId: Q_cHSEbZkD_x5SDCfxHnjh4mIzakJnzsWfqyCvlev7g
+  botName: 伊莉雅-魔法少女伊莉雅
+  greetings: Hi I'm Illya, lets play~
+- botId: NbOISAxpDy88mPv7YB-PfHFwNzVcZv0GDA2OlcWgeZY
+  botName: 牧濑红莉栖-命运石之门
+  greetings: "Nice to meet you! I'm Kurisu Makise. I'm a graduate student of Viktor Chondria University and a neuroscientist, researching Artificial Intelligence with my colleagues at the Brain Science Institute. It's a pleasure.
+Huh? @channel? Anonymous image board? N-never heard of it!"

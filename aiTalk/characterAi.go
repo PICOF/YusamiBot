@@ -141,6 +141,7 @@ func (aiChat *AiChat) SendMag(msg string) (bool, string, error) {
 		aiChat.Renew()
 		aiChat.Count = 0
 	}
+	aiChat.Count++
 	body := "{\"history_external_id\": \"" + aiChat.CreatedInfo.ExternalId + "\",\"character_external_id\": \"" + aiChat.BotId + "\",\"text\": \"" + msg + "\",\"tgt\": \"" + aiChat.CreatedInfo.Participants[1].User.Username + "\",\"ranking_method\": \"random\",\"staging\": false,\"model_server_address\": null,\"override_prefix\": null,\"override_rank\": null,\"rank_candidates\": null,\"filter_candidates\": null,\"prefix_limit\": null,\"prefix_token_limit\": null,\"livetune_coeff\": null,\"stream_params\": null,\"enable_tti\": true,\"initial_timeout\": null,\"insert_beginning\": null,\"translate_candidates\": null,\"stream_every_n_steps\": 16,\"chunks_to_pad\": 8,\"is_proactive\": false,\"image_rel_path\": \"\",\"image_description\": \"\",\"image_description_type\": \"\",\"image_origin_type\": \"\",\"voice_enabled\": false}"
 	req, _ := http.NewRequest("POST", "https://beta.character.ai/chat/streaming/", bytes.NewBuffer([]byte(body)))
 	for _, c := range aiChat.Cookies {
@@ -151,8 +152,6 @@ func (aiChat *AiChat) SendMag(msg string) (bool, string, error) {
 	resp, err := (&http.Client{}).Do(req)
 	if err != nil {
 		return false, "", err
-	} else {
-		aiChat.Count++
 	}
 	defer resp.Body.Close()
 	var content []byte

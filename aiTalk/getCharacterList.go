@@ -20,6 +20,9 @@ func GetCharacterList() bool {
 		myUtil.ErrLog.Println("Error reading character list file: ", err)
 		return false
 	}
-	yaml.Unmarshal(file, &CharList)
+	err = yaml.Unmarshal(file, &CharList)
+	if err != nil {
+		return false
+	}
 	return true
 }

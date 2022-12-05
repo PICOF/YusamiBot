@@ -43,7 +43,7 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 			}
 		}
 	}
-	if ml[0] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
+	if len(ml) == 2 && ml[0] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
 		if ml[1] == "聊天" {
 			msg := "请选择人格，10s后自动失效："
 			for i, v := range CharList {
