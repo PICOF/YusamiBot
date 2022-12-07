@@ -59,7 +59,7 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 						return res, err
 					}
 				}
-				if m[:21] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
+				if ml[0] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
 					if strings.Contains(ml[1], "课") {
 						res, err := SchoolTimeTable(ml[1], mjson.UserID)
 						if res != "" {

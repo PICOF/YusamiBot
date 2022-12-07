@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -35,12 +36,22 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 			msg, err := OpenAiMap[name].SendAndReceiveMsg(mjson.Message[6:])
 			myUtil.SendGroupMessage(ws, mjson.GroupID, msg)
 			if err != nil {
-				myUtil.ErrLog.Println("OpenAi 请求时出错！error:", err)
-				return false
+				myUtil.ErrLog.Println("OpenAi talk 请求时出错！error:", err)
+				return true
 			}
 		case "/preset":
 			OpenAiMap[name].SetPreset(mjson.Message[8:])
 			myUtil.SendGroupMessage(ws, mjson.GroupID, "预设配置成功！")
+		case "/edit":
+			if len(ml) < 3 {
+				return false
+			}
+			msg, err := OpenAiMap[name].EditMsg(strings.Join(ml[1:len(ml)-1], " "), ml[len(ml)-1])
+			myUtil.SendGroupMessage(ws, mjson.GroupID, msg)
+			if err != nil {
+				myUtil.ErrLog.Println("OpenAi edit 请求时出错！error:", err)
+				return true
+			}
 		}
 	}
 	if MsgDistributeMap[name] != nil {

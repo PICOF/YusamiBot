@@ -34,6 +34,34 @@ type Choice struct {
 	Text string `json:"text"`
 }
 
+func (openAi *OpenAiPersonal) EditMsg(text string, require string) (string, error) {
+	encoded := new(bytes.Buffer)
+	err := json.NewEncoder(encoded).Encode(text)
+	if err != nil {
+		return "哎呀，出错了！", err
+	}
+	body := "{\"model\": \"code-davinci-edit-001\", \"input\": " + encoded.String() + ", \"instruction\": \"" + require + "\"}"
+	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/edits", bytes.NewBuffer([]byte(body)))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+config.Settings.OpenAi.Token)
+	resp, err := (&http.Client{}).Do(req)
+	if err != nil {
+		return "哎呀，出错了！", err
+	} else if resp.StatusCode != 200 {
+		v, _ := ioutil.ReadAll(resp.Body)
+		return "哎呀，出错了！", errors.New(resp.Status + " " + string(v) + " " + body)
+	}
+	defer resp.Body.Close()
+	var content []byte
+	content, err = ioutil.ReadAll(resp.Body)
+	var reply OpenAiReply
+	err = json.Unmarshal(content, &reply)
+	if err != nil {
+		return "哎呀，出错了！", err
+	}
+	return strings.Trim(strings.ReplaceAll(reply.Choices[0].Text, "\\n", "\n"), "\n "), nil
+}
+
 func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 	switch text {
 	case "撤回":
@@ -76,9 +104,9 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 	if openAi.Memory {
 		openAi.Context += openAi.Reply
 		openAi.Context += text
+		openAi.Reply = strings.Trim(reply.Choices[0].Text, "\n ") + "\\n"
 	}
-	openAi.Reply = strings.Trim(reply.Choices[0].Text, "\n ") + "\\n"
-	return strings.Trim(reply.Choices[0].Text, "\n "), nil
+	return strings.Trim(strings.ReplaceAll(reply.Choices[0].Text, "\\n", "\n"), "\n "), nil
 }
 
 func (openAi *OpenAiPersonal) SetPreset(preset string) {
