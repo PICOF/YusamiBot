@@ -19,6 +19,10 @@ type BangumiSettings struct {
 	MaxPoolSize   int  `yaml:"maxPoolSize"`
 }
 
+type OpenAi struct {
+	Token string `yaml:"token"`
+}
+
 type Setting struct {
 	Mode       MsgFilterMode   `yaml:"msgFilterMode"`
 	DataSource DataSource      `yaml:"dataSource"`
@@ -30,6 +34,7 @@ type Setting struct {
 	Setu       Setu            `yaml:"setu"`
 	BotName    BotName         `yaml:"botName"`
 	Bangumi    BangumiSettings `yaml:"bangumi"`
+	OpenAi     OpenAi          `yaml:"openAi"`
 }
 
 type MsgFilterMode struct {

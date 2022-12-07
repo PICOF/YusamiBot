@@ -12,6 +12,7 @@ import (
 
 var MsgDistributeMap = make(map[string]chan string)
 var BotMap = make(map[string]interface{})
+var OpenAiMap = make(map[string]*OpenAiPersonal)
 var numList = []string{"₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"}
 
 func generatNumber(num int) string {
@@ -24,18 +25,36 @@ func generatNumber(num int) string {
 }
 
 func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) bool {
-	if MsgDistributeMap[strconv.FormatInt(mjson.GroupID, 10)+strconv.FormatInt(mjson.UserID, 10)] != nil {
+	name := strconv.FormatInt(mjson.GroupID, 10) + strconv.FormatInt(mjson.UserID, 10)
+	if len(ml) >= 2 {
+		if _, ok := OpenAiMap[name]; !ok {
+			OpenAiMap[name] = &OpenAiPersonal{Model: "text-davinci-003", Memory: false}
+		}
+		switch ml[0] {
+		case "/talk":
+			msg, err := OpenAiMap[name].SendAndReceiveMsg(mjson.Message[6:])
+			myUtil.SendGroupMessage(ws, mjson.GroupID, msg)
+			if err != nil {
+				myUtil.ErrLog.Println("OpenAi 请求时出错！error:", err)
+				return false
+			}
+		case "/preset":
+			OpenAiMap[name].SetPreset(mjson.Message[8:])
+			myUtil.SendGroupMessage(ws, mjson.GroupID, "预设配置成功！")
+		}
+	}
+	if MsgDistributeMap[name] != nil {
 		if mjson.Message == "再见" {
-			if MsgDistributeMap[strconv.FormatInt(mjson.GroupID, 10)+strconv.FormatInt(mjson.UserID, 10)] != nil {
+			if MsgDistributeMap[name] != nil {
 				myUtil.SendGroupMessage(ws, mjson.GroupID, "再见~")
 				myUtil.MsgLog.Println("aiTalk已关闭")
-				close(MsgDistributeMap[strconv.FormatInt(mjson.GroupID, 10)+strconv.FormatInt(mjson.UserID, 10)])
-				MsgDistributeMap[strconv.FormatInt(mjson.GroupID, 10)+strconv.FormatInt(mjson.UserID, 10)] = nil
+				close(MsgDistributeMap[name])
+				MsgDistributeMap[name] = nil
 			}
 			return true
 		} else {
 			select {
-			case MsgDistributeMap[strconv.FormatInt(mjson.GroupID, 10)+strconv.FormatInt(mjson.UserID, 10)] <- mjson.Message:
+			case MsgDistributeMap[name] <- mjson.Message:
 				return true
 			default:
 				myUtil.MsgLog.Println("消息通道阻塞，丢弃消息：" + mjson.Message)
@@ -50,7 +69,6 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 				msg += "\n" + generatNumber(i+1) + v.BotName
 			}
 			myUtil.SendGroupMessage(ws, mjson.GroupID, msg)
-			name := strconv.FormatInt(mjson.GroupID, 10) + strconv.FormatInt(mjson.UserID, 10)
 			MsgDistributeMap[name] = make(chan string)
 			var num int
 			var err error
