@@ -3,6 +3,7 @@ package main
 import (
 	"Lealra/JMComic"
 	"Lealra/aiTalk"
+	"Lealra/bilibili"
 	"Lealra/config"
 	"Lealra/data"
 	"Lealra/handler"
@@ -60,6 +61,7 @@ func main() {
 			<-c.Done()
 			fmt.Println("连接已断开", err.Error())
 		}()
+		go bilibili.StartSubscribeScanner(ws)
 		for {
 			// 读取客户端发送过来的消息，如果没发就会一直阻塞住
 			_, message, err := ws.ReadMessage()

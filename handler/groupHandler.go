@@ -4,6 +4,7 @@ import (
 	"Lealra/JMComic"
 	"Lealra/aiTalk"
 	"Lealra/bangumi"
+	"Lealra/bilibili"
 	"Lealra/config"
 	"Lealra/data"
 	"Lealra/genshin"
@@ -103,7 +104,11 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 				}
 			}
 		}
-		res, err := news.BangumiNewsHandler(ml, mjson, ws)
+		res, err = bilibili.SubscribeHandler(ws, mjson, ml)
+		if res != "" {
+			return res, err
+		}
+		res, err = news.BangumiNewsHandler(ml, mjson, ws)
 		if res != "" {
 			return res, err
 		}

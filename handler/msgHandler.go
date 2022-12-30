@@ -22,7 +22,7 @@ func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error
 	if mjson.PostType == "meta_event" {
 		switch mjson.MetaEventType {
 		case "heartbeat":
-			println("heartbeat")
+			//println("heartbeat")
 			return nil, nil
 		case "lifecycle":
 			myUtil.MsgLog.Println("lifecycle")

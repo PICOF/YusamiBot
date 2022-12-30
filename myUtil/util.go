@@ -7,8 +7,11 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/skip2/go-qrcode"
+	"io/ioutil"
+	"net/http"
 	"reflect"
 	"sync"
+	"unicode"
 )
 
 var WsLock sync.Mutex
@@ -81,4 +84,23 @@ func SendGroupMessage(ws *websocket.Conn, groupId int64, msg string) error {
 	err := ws.WriteMessage(returnStruct.MsgType, o)
 	WsLock.Unlock()
 	return err
+}
+func Pic2Base64ByUrl(url string) string {
+	get, err := http.Get(url)
+	if err != nil {
+		ErrLog.Println("url转base64时出现错误，error:", err, "url:", url)
+		return ""
+	}
+	defer get.Body.Close()
+	var body []byte
+	body, err = ioutil.ReadAll(get.Body)
+	return base64.StdEncoding.EncodeToString(body)
+}
+func IsNumber(s string) bool {
+	for _, v := range s {
+		if !unicode.IsNumber(v) {
+			return false
+		}
+	}
+	return true
 }

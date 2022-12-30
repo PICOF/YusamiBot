@@ -37,8 +37,8 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 			myUtil.SendGroupMessage(ws, mjson.GroupID, msg)
 			if err != nil {
 				myUtil.ErrLog.Println("OpenAi talk 请求时出错！error:", err)
-				return true
 			}
+			return true
 		case "/preset":
 			OpenAiMap[name].SetPreset(mjson.Message[8:])
 			myUtil.SendGroupMessage(ws, mjson.GroupID, "预设配置成功！")
@@ -50,8 +50,8 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 			myUtil.SendGroupMessage(ws, mjson.GroupID, msg)
 			if err != nil {
 				myUtil.ErrLog.Println("OpenAi edit 请求时出错！error:", err)
-				return true
 			}
+			return true
 		}
 	}
 	if MsgDistributeMap[name] != nil {
@@ -121,6 +121,9 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 		bot, err := chat.SetBot(botId)
 		if !bot {
 			myUtil.ErrLog.Println("群组", groupId, "的", uid, "建立 aiTalk 初始化失败,error:", err)
+			myUtil.SendGroupMessage(ws, groupId, "聊天建立失败，请稍后重试")
+			close(MsgDistributeMap[name])
+			MsgDistributeMap[name] = nil
 			return
 		}
 		myUtil.SendGroupMessage(ws, groupId, CharList[botNum].Greetings)

@@ -30,8 +30,8 @@ auth:
 aiPaint:
   api: http://91.216.169.75:5010
   token:
-    - he7y2nsXlGdizr5IE8ZPkpo0KNCmMuWB
-    - 0yexhmuQVgtNX8O2kM46HivJU7dnSqZE
+    - Njm2KthPDsS4nY1lLpOIF7EwzdoBaiGX
+    - gjeAFROY9c3N4tWK6GCbnLsyMIoH8q0U
 bangumi:
   bangumiSearch: true
   maxPoolSize: 3
@@ -39,4 +39,4 @@ setu:
   setuGroupSender: true
   api: https://api.lolicon.app/setu/v2 # https://lolisuki.cc/api/setu/v1
 openAi:
-  token: #your token
+  token: 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 #your token

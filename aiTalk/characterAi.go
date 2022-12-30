@@ -48,7 +48,7 @@ type AiChat struct {
 	Count       int
 }
 
-const letters = "123567890abcdefghijklmnopqrstuvwxyz"
+const letters = "123567890abcdef"
 
 func (aiChat *AiChat) SetBot(BotId string) (bool, error) {
 	//给什么是什么
@@ -66,11 +66,11 @@ func (aiChat *AiChat) SetBot(BotId string) (bool, error) {
 }
 
 func (aiChat *AiChat) getLazyUuid() {
-	//8+4+4+4+11的格式
+	//8+4+4+4+12的格式
 	rand.Seed(time.Now().UnixNano())
 	num := len(letters)
 	var ret string
-	for i := 0; i < 31; i++ {
+	for i := 0; i < 32; i++ {
 		ret += string(letters[rand.Intn(num)])
 		if i == 7 || i == 11 || i == 15 || i == 19 {
 			ret += "-"
@@ -92,6 +92,7 @@ func (aiChat *AiChat) getToken() (bool, error) {
 	var msg LazyUuid
 	err = json.Unmarshal(body, &msg)
 	if err != nil {
+		println(string(body), aiChat.Uuid)
 		return false, err
 	}
 	if !msg.Success {
