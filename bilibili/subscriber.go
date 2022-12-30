@@ -7,12 +7,12 @@ import (
 	"github.com/dlclark/regexp2"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 var SubscribedMap sync.Map
-var SubscribedLock sync.Mutex
 
 type Dynamic struct {
 	Code int         `json:"code"`
@@ -174,16 +174,24 @@ type DynamicItem struct {
 }
 
 type NormalDynamic struct {
-	//对应的是文字及图片动态
-	Item      DynamicItem `json:"item"`
-	Origin    string      `json:"origin"`
-	Duration  uint32      `json:"duration"`
-	Aid       uint32      `json:"aid"`
-	Desc      string      `json:"desc"`
-	Dynamic   string      `json:"dynamic"`
-	Pic       string      `json:"pic"`
-	ShortLink string      `json:"short_Link"`
-	Title     string      `json:"title"`
+	Id         int64       `json:"id"`
+	Item       DynamicItem `json:"item"`
+	Origin     string      `json:"origin"`
+	Duration   uint32      `json:"duration"`
+	Aid        uint32      `json:"aid"`
+	Desc       string      `json:"desc"`
+	Dynamic    string      `json:"dynamic"`
+	Pic        string      `json:"pic"`
+	ShortLink  string      `json:"short_Link"`
+	Title      string      `json:"title"`
+	Categories []struct {
+		Name string `json:"name"`
+	} `json:"categories"`
+	Summary   string   `json:"summary"`
+	BannerUrl string   `json:"banner_url"`
+	ImageUrls []string `json:"image_urls"`
+	TypeInfo  string   `json:"typeInfo"`
+	Cover     string   `json:"cover"`
 }
 
 func (b *BiliUp) DynamicAnalysis(index int) string {
@@ -209,7 +217,7 @@ func DynamicTranslate(DynamicType int, content string) string {
 	var ret string
 	switch DynamicType {
 	case 1:
-		ret = dynamic.Item.Content + "\n转发动态：\n" + DynamicTranslate(dynamic.Item.OrigType, dynamic.Origin)
+		ret = dynamic.Item.Content + "\n【转发动态】：\n" + DynamicTranslate(dynamic.Item.OrigType, dynamic.Origin)
 	case 2:
 		//图片动态
 		for _, i := range dynamic.Item.Pictures {
@@ -221,11 +229,23 @@ func DynamicTranslate(DynamicType int, content string) string {
 		ret = dynamic.Item.Content + dynamic.Item.Description + ret
 	case 8:
 		//	视频投稿
-		ret = dynamic.Dynamic + "\n视频：" + dynamic.Title + "\n[CQ:image,file=" + dynamic.Pic + "]\n" + dynamic.Desc + "\n链接：" + dynamic.ShortLink
+		ret = dynamic.Dynamic + "\n【视频】：" + dynamic.Title + "\n[CQ:image,file=" + dynamic.Pic + "]\n" + dynamic.Desc + "\n【链接】：" + dynamic.ShortLink
 	case 64:
-	//	专栏投稿
+		//	专栏投稿
+		var tags, pics, banner string
+		for _, v := range dynamic.Categories {
+			tags += v.Name + " "
+		}
+		for _, v := range dynamic.ImageUrls {
+			pics += "[CQ:image,file=" + v + "]"
+		}
+		if dynamic.BannerUrl != "" {
+			banner = "[CQ:image,file=" + dynamic.BannerUrl + "]"
+		}
+		ret = banner + "\n【专栏】：" + dynamic.Title + "\n【分类】：" + tags + "\n" + pics + "\n【链接】：" + "https://www.bilibili.com/read/cv" + strconv.FormatInt(dynamic.Id, 10)
 	case 256:
 		//音频投稿
+		ret = "[CQ:image,file=" + dynamic.Cover + "]" + "\n【音频】：" + dynamic.Title + "\n【分类】：" + dynamic.TypeInfo + "\n【链接】：" + "https://www.bilibili.com/audio/au" + strconv.FormatInt(dynamic.Id, 10)
 	}
 	return ret
 }

@@ -19,7 +19,6 @@ import (
 )
 
 var groupSwitch = make(map[int64]bool)
-var groupTrigger = make(map[int64]chan bool)
 var groupLock sync.Mutex
 
 type subscribeList struct {
@@ -30,12 +29,15 @@ type subscribeList struct {
 }
 
 func SubscribeHandler(ws *websocket.Conn, mjson returnStruct.Message, m []string) (string, error) {
+	m = append(m, "1")
 	if m[0] == "b站" {
 		switch m[1] {
 		case "关注":
 			return AddSubscribe(mjson.UserID, mjson.GroupID, m[2])
 		case "取消关注":
 			return DeleteSubscribe(mjson.UserID, mjson.GroupID, m[2])
+		case "动态":
+			fallthrough
 		case "查看动态":
 			return LookDynamics(mjson, ws, m[2])
 		case "直播":
@@ -111,15 +113,15 @@ func ScanPersonalSubscribe(ws *websocket.Conn, sendMap map[int64][]int64, subscr
 				if d.Description.Timestamp <= lastTime {
 					break
 				}
+				msg := "\n你关注的 up 主" + v.Info.Data.InfoCard.Name + "刚刚更新了:\n" + v.DynamicAnalysis(i)
 				for gid, uList := range sendMap {
 					if groupSwitch[gid] {
-						go func(uList []int64, gid int64, i int) {
-							msg := "\n你关注的 up 主" + v.Info.Data.InfoCard.Name + "刚刚更新了:\n" + v.DynamicAnalysis(i)
+						go func(uList []int64, gid int64, msg string) {
 							for _, v := range uList {
 								msg = "[CQ:at,qq=" + strconv.FormatInt(v, 10) + "] " + msg
 							}
 							myUtil.SendGroupMessage(ws, gid, msg)
-						}(uList, gid, i)
+						}(uList, gid, msg)
 					}
 				}
 			}
@@ -132,16 +134,17 @@ func ScanPersonalSubscribe(ws *websocket.Conn, sendMap map[int64][]int64, subscr
 			return
 		}
 		if info {
+			var msg string
+			msg = LiveRoomInfoFormat(msg, *v)
 			for gid, uList := range sendMap {
 				if groupSwitch[gid] {
-					go func(uList []int64, gid int64) {
-						msg := "\n你关注的 up 主" + v.Info.Data.InfoCard.Name + "正在直播:\n"
+					go func(uList []int64, gid int64, msg string) {
 						for _, v := range uList {
 							msg = "[CQ:at,qq=" + strconv.FormatInt(v, 10) + "] " + msg
 						}
-						msg = LiveRoomInfoFormat(msg, *v)
+						msg = "\n你关注的 up 主" + v.Info.Data.InfoCard.Name + "正在直播:\n" + msg
 						myUtil.SendGroupMessage(ws, gid, msg)
-					}(uList, gid)
+					}(uList, gid, msg)
 				}
 			}
 		}
