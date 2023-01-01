@@ -16,7 +16,7 @@ var SubscribedMap sync.Map
 
 type Dynamic struct {
 	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
+	Msg  string      `json:"message"`
 	Data DynamicData `json:"data"`
 }
 type DynamicData struct {
@@ -120,7 +120,7 @@ func (b *BiliUp) GetDynamic() (bool, uint32, error) {
 		if d.Code == 0 {
 			return false, 0, nil
 		}
-		return false, 0, errors.New("动态内容获取为空！")
+		return false, 0, errors.New("动态内容获取出错！" + "\ncode:" + strconv.Itoa(d.Code) + " message:" + d.Msg)
 	}
 	b.Dynamics = d.Data.Cards
 	if b.LastDynamic < d.Data.Cards[0].Description.Timestamp {
@@ -156,6 +156,9 @@ func (b *BiliUp) GetLiveRoomInfo() (bool, error) {
 	}
 	if l.LiveTime == b.LiveRoom.LiveTime {
 		return false, nil
+	} else if l.LiveTime == "0000-00-00 00:00:00" {
+		b.LiveRoom.Status = false
+		return false, nil
 	}
 	b.LiveRoom = l
 	b.LiveRoom.Status = true
@@ -170,6 +173,7 @@ type DynamicItem struct {
 	Content     string       `json:"content"`
 	Description string       `json:"description"`
 	Pictures    []DynamicPic `json:"pictures"`
+	Tips        string       `json:"tips"`
 	OrigType    int          `json:"orig_type"`
 }
 
@@ -187,11 +191,27 @@ type NormalDynamic struct {
 	Categories []struct {
 		Name string `json:"name"`
 	} `json:"categories"`
-	Summary   string   `json:"summary"`
-	BannerUrl string   `json:"banner_url"`
-	ImageUrls []string `json:"image_urls"`
-	TypeInfo  string   `json:"typeInfo"`
-	Cover     string   `json:"cover"`
+	Summary      string   `json:"summary"`
+	BannerUrl    string   `json:"banner_url"`
+	ImageUrls    []string `json:"image_urls"`
+	TypeInfo     string   `json:"typeInfo"`
+	Cover        string   `json:"cover"`
+	LivePlayInfo struct {
+		AreaName       string `json:"area_name"`
+		ParentAreaName string `json:"parent_area_name"`
+		Title          string `json:"title"`
+		Link           string `json:"link"`
+		Cover          string `json:"cover"`
+		LiveStatus     uint8  `json:"live_status"`
+		Uid            int64  `json:"uid"`
+	} `json:"live_play_info"`
+	RoomId         uint32 `json:"room_id"`
+	LiveUrl        string `json:"slide_link"`
+	LiveTime       string `json:"live_time"`
+	ParentAreaName string `json:"area_v2_parent_name"`
+	AreaName       string `json:"area_v2_name"`
+	Description    string `json:"description"`
+	Tags           string `json:"tags"`
 }
 
 func (b *BiliUp) DynamicAnalysis(index int) string {
@@ -200,13 +220,14 @@ func (b *BiliUp) DynamicAnalysis(index int) string {
 	}
 	ret := DynamicTranslate(b.Dynamics[index].Description.Type, b.Dynamics[index].Content)
 	for _, v := range b.Dynamics[index].Display.EmojiInfo.EmojiDetails {
-		ret = strings.ReplaceAll(ret, v.Text, "[CQ:image,file=base64://"+myUtil.Pic2Base64ByUrl(v.Url+"@50w_50h.png")+"]")
+		ret = strings.ReplaceAll(ret, v.Text, myUtil.GetBase64CQCode(v.Url+"@50w_50h.png"))
 	}
 	return ret
 }
 func DynamicTranslate(DynamicType int, content string) string {
+	//改base64纯属无奈之举，不知道是因为阿b图床太烂还是go-cqhttp的请求有问题，图片时常缺点，所以干脆直接用base64，确实会在一定程度上影响效率（没有图片缓存）
 	if DynamicType == 1024 {
-		return "【该动态已失效】"
+		return "【" + content + "】"
 	}
 	var dynamic NormalDynamic
 	err := json.Unmarshal([]byte(content), &dynamic)
@@ -217,11 +238,15 @@ func DynamicTranslate(DynamicType int, content string) string {
 	var ret string
 	switch DynamicType {
 	case 1:
-		ret = dynamic.Item.Content + "\n【转发动态】：\n" + DynamicTranslate(dynamic.Item.OrigType, dynamic.Origin)
+		if dynamic.Item.OrigType == 1024 {
+			ret = dynamic.Item.Content + "\n【转发动态】：\n" + DynamicTranslate(dynamic.Item.OrigType, dynamic.Item.Tips)
+		} else {
+			ret = dynamic.Item.Content + "\n【转发动态】：\n" + DynamicTranslate(dynamic.Item.OrigType, dynamic.Origin)
+		}
 	case 2:
 		//图片动态
 		for _, i := range dynamic.Item.Pictures {
-			ret += "\n[CQ:image,file=base64://" + myUtil.Pic2Base64ByUrl(i.ImgSrc) + "]"
+			ret += "\n" + myUtil.GetBase64CQCode(i.ImgSrc)
 		}
 		fallthrough
 	case 4:
@@ -229,7 +254,7 @@ func DynamicTranslate(DynamicType int, content string) string {
 		ret = dynamic.Item.Content + dynamic.Item.Description + ret
 	case 8:
 		//	视频投稿
-		ret = dynamic.Dynamic + "\n【视频】：" + dynamic.Title + "\n[CQ:image,file=" + dynamic.Pic + "]\n" + dynamic.Desc + "\n【链接】：" + dynamic.ShortLink
+		ret = dynamic.Dynamic + "\n【视频】：" + dynamic.Title + "\n" + myUtil.GetBase64CQCode(dynamic.Pic) + "\n" + dynamic.Desc + "\n【链接】：" + dynamic.ShortLink
 	case 64:
 		//	专栏投稿
 		var tags, pics, banner string
@@ -237,15 +262,25 @@ func DynamicTranslate(DynamicType int, content string) string {
 			tags += v.Name + " "
 		}
 		for _, v := range dynamic.ImageUrls {
-			pics += "[CQ:image,file=" + v + "]"
+			pics += myUtil.GetBase64CQCode(v)
 		}
 		if dynamic.BannerUrl != "" {
-			banner = "[CQ:image,file=" + dynamic.BannerUrl + "]"
+			banner = myUtil.GetBase64CQCode(dynamic.BannerUrl)
 		}
 		ret = banner + "\n【专栏】：" + dynamic.Title + "\n【分类】：" + tags + "\n" + pics + "\n【链接】：" + "https://www.bilibili.com/read/cv" + strconv.FormatInt(dynamic.Id, 10)
 	case 256:
 		//音频投稿
-		ret = "[CQ:image,file=" + dynamic.Cover + "]" + "\n【音频】：" + dynamic.Title + "\n【分类】：" + dynamic.TypeInfo + "\n【链接】：" + "https://www.bilibili.com/audio/au" + strconv.FormatInt(dynamic.Id, 10)
+		ret = myUtil.GetBase64CQCode(dynamic.Cover) + "\n【音频】：" + dynamic.Title + "\n【分类】：" + dynamic.TypeInfo + "\n【链接】：" + "https://www.bilibili.com/audio/au" + strconv.FormatInt(dynamic.Id, 10)
+	case 4200:
+		ret = "▛" + dynamic.Title + "▟\n" + myUtil.GetBase64CQCode(dynamic.Cover) + "\n" + "◉ 开播时间\n" + dynamic.LiveTime + "\n" + "◉ 分区\n" + dynamic.ParentAreaName + " : " + dynamic.AreaName + "\n" + "◉ 标签\n" + dynamic.Tags + "\n" + "◉ 简介\n" + dynamic.Description + "\n" + "◉ 直通车\n" + dynamic.LiveUrl
+	//TODO 这部分只能说我也不清楚是什么动态类型，只能靠猜，感觉像是直播转发但是4200已经是验证过的直播转发类型了，这个与4200结构还不太一样，所以先打个注释，后面有机会再确认
+	case 4308:
+		upName := strconv.FormatInt(dynamic.LivePlayInfo.Uid, 10)
+		upInfo, _ := GetUpInfoByUid(upName)
+		if upInfo != nil {
+			upName = upInfo.Data.Name
+		}
+		ret = "@ " + upName + "\n" + myUtil.GetBase64CQCode(dynamic.LivePlayInfo.Cover) + "\n【直播】\n▛" + dynamic.LivePlayInfo.Title + "▟\n◉ 分区\n" + dynamic.LivePlayInfo.ParentAreaName + " : " + dynamic.LivePlayInfo.AreaName + "\n◉ 直通车\n" + dynamic.LivePlayInfo.Link
 	}
 	return ret
 }

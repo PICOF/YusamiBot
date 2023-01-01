@@ -98,7 +98,9 @@ func Music(mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
 					v.Param.UserID = mjson.UserID
 				}
 				o, _ := json.Marshal(v)
+				myUtil.WsLock.Lock()
 				ws.WriteMessage(returnStruct.MsgType, o)
+				myUtil.WsLock.Unlock()
 				return "[CQ:record,file=http://music.163.com/song/media/outer/url?id=" + res + ".mp3]", err
 			} else {
 				return "未找到相关曲目，换个关键词再搜搜吧~", err

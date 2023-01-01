@@ -1,34 +1,34 @@
 msgFilterMode:
-  groupFilterMode: 2 #0不过滤，1采用黑名单方式，2采用白名单方式
-  privateFilterMode: 2
+  groupFilterMode: 2 #0不过滤，1采用黑名单方式，2采用白名单方式，对应的表是 PermissionList
+  privateFilterMode: 2 # 同上
 botName:
-  name: Isara
-  fullName: 19岁现役JD Isara
-  lowerCasedName: isara
-  id: 2096820879
+  name: Isara # 一般用于自我称呼
+  fullName: 19岁现役JD Isara # 全称，一般是在转发消息这种地方使用
+  lowerCasedName: isara # 用于一些指令匹配的地方，最好小写
+  id: 2096820879 # bot 控制的 QQ id
 dataSource:
-  port: 27017
-  auth: false
+  port: 27017 # mongoDB 的端口
+  auth: false # 是否启用身份验证
   username: null
   password: null
-  databaseName: Lealra
+  databaseName: Lealra # 使用的数据库名称
   maxPoolSize: 10
   timeout: 100 #单位：秒
 server:
-  port: 8081
-  hostname: 127.0.0.1
+  port: 8081 # 该服务开启的端口
+  hostname: 127.0.0.1 # 可以改成 ip 或者域名，nsfw 图的二维码是基于这个生成的
 function:
-  repeat: true
-  makeChoice: true
-  privateDiary: false
+  repeat: true # 是否有概率复读
+  makeChoice: true # 对A不A格式的文本是否有反应
+  privateDiary: false # 是否开启私人笔记，即无法通过生成二维码直接访问，对应的是 admin 账号
 logs:
   msgLogsRefreshCycle: 48 #單位：小時，每小時自動清理
   errLogsRefreshCycle: 3 #單位：天，且新一天到來時就會刪除之前的日志
 auth:
   admin:
-    - 1730483316
+    - 1730483316 # 管理员账号
 aiPaint:
-  api: http://91.216.169.75:5010
+  api: http://91.216.169.75:5010 # 这个功能一开始嫖的别人的，但是好像最近那边的图片获取不太稳定，会考虑把这个功能修复一下
   token:
     - Njm2KthPDsS4nY1lLpOIF7EwzdoBaiGX
     - gjeAFROY9c3N4tWK6GCbnLsyMIoH8q0U
@@ -36,7 +36,18 @@ bangumi:
   bangumiSearch: true
   maxPoolSize: 3
 setu:
-  setuGroupSender: true
+  setuGroupSender: true # 是否能群发，现在改了显示方式已经没有多少被封杀的可能了
   api: https://api.lolicon.app/setu/v2 # https://lolisuki.cc/api/setu/v1
 openAi:
-  token: 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 #your token
+  token:  #your token
+learnAndResponse:
+#  只有在你空间属实不够的情况下，考虑白嫖qq图床，否则仍然建议base64，因为qq图床的定期清理很讨厌，虽然做了相应的续期措施，但该措施可能导致其它隐患
+  renewSwitch: false
+  groupToRenew: 608203511 # 用于续期的群，最好私人群，太吵了
+  msgInterval: 2 # 消息间隔，单位s,过短容易出事
+  useBase64: true # 空间够用的话强烈建议打开
+proxy:
+  httpsProxy:
+    - http://201.222.45.2:999
+    - http://49.0.253.51:8080
+    - http://201.222.44.106:999

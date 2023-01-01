@@ -137,7 +137,9 @@ func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson return
 		myUtil.ErrLog.Println("发送涩图通知时出现异常：", err)
 		return "今天还是歇歇养生一下吧~", err
 	}
+	myUtil.WsLock.Lock()
 	err = ws.WriteMessage(returnStruct.MsgType, marshal)
+	myUtil.WsLock.Unlock()
 	resp, err := http.Post(config.Settings.Setu.Api, "application/json", bytes.NewBuffer(ret))
 	if err != nil {
 		myUtil.ErrLog.Println("获取涩图地址时出现错误：Error:", err)
@@ -166,7 +168,9 @@ func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson return
 			myUtil.ErrLog.Println("发送涩图时出现异常：", err)
 			return "我图图呢？", err
 		}
+		myUtil.WsLock.Lock()
 		err = ws.WriteMessage(returnStruct.MsgType, marshal)
+		myUtil.WsLock.Unlock()
 	} else {
 		var data []string
 		for _, e := range se.Data {

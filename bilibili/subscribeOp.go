@@ -29,61 +29,65 @@ type subscribeList struct {
 }
 
 func SubscribeHandler(ws *websocket.Conn, mjson returnStruct.Message, m []string) (string, error) {
+	if m[0] != "b站" {
+		return "", nil
+	} else if !groupSwitch[mjson.GroupID] && m[1] != "开启" {
+		return "还没有开启相关功能哦！", nil
+	}
 	m = append(m, "1")
-	if m[0] == "b站" {
-		switch m[1] {
-		case "关注":
-			return AddSubscribe(mjson.UserID, mjson.GroupID, m[2])
-		case "取消关注":
-			return DeleteSubscribe(mjson.UserID, mjson.GroupID, m[2])
-		case "动态":
-			fallthrough
-		case "查看动态":
-			return LookDynamics(mjson, ws, m[2])
-		case "直播":
-			if len(m) == 2 {
-				return getAllLiveByGid(mjson, ws), nil
-			} else {
-				return AskForLiveRoomStatus(m[2], mjson.GroupID)
-			}
-		case "关注列表":
-			return GetSubscribedList(mjson.GroupID, mjson.UserID)
-		case "查询用户":
-			return GetUserList(m[2])
-		case "开启":
-			groupLock.Lock()
-			if groupSwitch[mjson.GroupID] {
-				groupLock.Unlock()
-				return "已开启，请勿重复操作！", nil
-			} else {
-				groupSwitch[mjson.GroupID] = true
-				groupLock.Unlock()
-				go getAllLiveByGid(mjson, ws)
-			}
-			return "开启成功！", nil
-		case "关闭":
-			groupLock.Lock()
-			groupSwitch[mjson.GroupID] = false
-			groupLock.Unlock()
-			myUtil.MsgLog.Println("群 ", mjson.GroupID, " 的b站辅助功能已关闭")
-			return "关闭成功！", nil
+	switch m[1] {
+	case "关注":
+		return AddSubscribe(mjson.UserID, mjson.GroupID, m[2])
+	case "取消关注":
+		return DeleteSubscribe(mjson.UserID, mjson.GroupID, m[2])
+	case "动态":
+		fallthrough
+	case "查看动态":
+		return LookDynamics(mjson, ws, m[2])
+	case "直播":
+		if len(m) == 3 {
+			return getAllLiveByUid(mjson, ws), nil
+		} else {
+			return AskForLiveRoomStatus(m[2], mjson.GroupID, true)
 		}
+	case "关注列表":
+		return GetSubscribedList(mjson.GroupID, mjson.UserID)
+	case "查询用户":
+		return GetUserList(m[2])
+	case "开启":
+		groupLock.Lock()
+		if groupSwitch[mjson.GroupID] {
+			groupLock.Unlock()
+			return "已开启，请勿重复操作！", nil
+		} else {
+			groupSwitch[mjson.GroupID] = true
+			groupLock.Unlock()
+			go getAllLiveByGid(mjson, ws)
+		}
+		return "开启成功！", nil
+	case "关闭":
+		groupLock.Lock()
+		groupSwitch[mjson.GroupID] = false
+		groupLock.Unlock()
+		myUtil.MsgLog.Println("群 ", mjson.GroupID, " 的b站辅助功能已关闭")
+		return "关闭成功！", nil
 	}
 	return "", nil
 }
 
-func StartSubscribeScanner(ws *websocket.Conn) {
-	go ScanSubscribe(ws)
+func StartSubscribeScanner() {
+	for myUtil.PublicWs == nil {
+	}
 	for {
-		select {
-		case <-time.After(30 * time.Second):
-			go ScanSubscribe(ws)
-		}
+		go ScanSubscribe(myUtil.PublicWs)
+		time.Sleep(30 * time.Second)
 	}
 }
-func LiveRoomInfoFormat(msg string, b BiliUp) string {
+func LiveRoomInfoFormat(msg string, b BiliUp, showCover bool) string {
 	msg += "▛" + b.LiveRoom.Title + "▟\n"
-	msg += "[CQ:image,file=" + b.LiveRoom.Cover + "]\n"
+	if showCover {
+		msg += myUtil.GetBase64CQCode(b.LiveRoom.Cover) + "\n"
+	}
 	msg += "◉ 开播时间\n" + b.LiveRoom.LiveTime + "\n"
 	msg += "◉ 分区\n" + b.LiveRoom.ParentAreaName + " : " + b.LiveRoom.AreaName + "\n"
 	msg += "◉ 标签\n" + b.LiveRoom.Tags + "\n"
@@ -105,7 +109,7 @@ func ScanPersonalSubscribe(ws *websocket.Conn, sendMap map[int64][]int64, subscr
 	go func(v *BiliUp) {
 		dynamic, lastTime, err := v.GetDynamic()
 		if err != nil {
-			myUtil.ErrLog.Println("扫描用户关注列表时出错：", "出错关注：", subscribe, "error", err)
+			myUtil.ErrLog.Println("扫描用户关注列表时出错：", "出错关注：", subscribe, "error：", err)
 			return
 		}
 		if dynamic {
@@ -135,14 +139,14 @@ func ScanPersonalSubscribe(ws *websocket.Conn, sendMap map[int64][]int64, subscr
 		}
 		if info {
 			var msg string
-			msg = LiveRoomInfoFormat(msg, *v)
+			msg = LiveRoomInfoFormat(msg, *v, true)
 			for gid, uList := range sendMap {
 				if groupSwitch[gid] {
 					go func(uList []int64, gid int64, msg string) {
+						msg = "\n你关注的 up 主" + v.Info.Data.InfoCard.Name + "正在直播:\n" + msg
 						for _, v := range uList {
 							msg = "[CQ:at,qq=" + strconv.FormatInt(v, 10) + "] " + msg
 						}
-						msg = "\n你关注的 up 主" + v.Info.Data.InfoCard.Name + "正在直播:\n" + msg
 						myUtil.SendGroupMessage(ws, gid, msg)
 					}(uList, gid, msg)
 				}
@@ -172,10 +176,25 @@ func ScanSubscribe(ws *websocket.Conn) {
 				if err != nil {
 					myUtil.ErrLog.Println(err)
 				}
+				if len(elem.Uid) == 0 {
+					go DeleteZombieSubscribe(subscribe, elem.Gid)
+					continue
+				}
 				sendMap[elem.Gid] = elem.Uid
 			}
 			ScanPersonalSubscribe(ws, sendMap, subscribe)
 		}(v.(string))
+	}
+}
+func DeleteZombieSubscribe(subscribe string, gid int64) {
+	filter := bson.D{{"subscribe", subscribe}, {"gid", gid}}
+	c := data.Db.Collection("subscribe")
+	res, err := c.DeleteOne(context.TODO(), filter)
+	if err != nil {
+		myUtil.ErrLog.Println("删除僵尸关注时出现错误：", err)
+	}
+	if res.DeletedCount > 0 {
+		myUtil.MsgLog.Println("成功删除僵尸关注：", subscribe)
 	}
 }
 func AddSubscribe(uid int64, gid int64, subscribe string) (string, error) {
@@ -215,7 +234,7 @@ func DeleteSubscribe(uid int64, gid int64, subscribe string) (string, error) {
 	if res.ModifiedCount == 0 {
 		return "貌似没有过相关关注呢~", err
 	}
-	return "删除成功~", nil
+	return "取关成功~", nil
 }
 func getSubscribeUidByName(name string) (string, error) {
 	var elem subscribeList
@@ -255,13 +274,10 @@ func LookDynamics(mjson returnStruct.Message, ws *websocket.Conn, match string) 
 		}()
 		return "正在努力搬运 up 主" + v.(*BiliUp).Info.Data.InfoCard.Name + "的动态~", nil
 	} else {
-		if !groupSwitch[mjson.GroupID] {
-			return "还没有开启相关功能哦！", nil
-		}
 		return "未找到相关up，可能是名称错误或者未关注", nil
 	}
 }
-func AskForLiveRoomStatus(match string, gid int64) (string, error) {
+func AskForLiveRoomStatus(match string, gid int64, display bool) (string, error) {
 	if !myUtil.IsNumber(match) {
 		uid, err := getSubscribeUidByName(match)
 		if err != nil {
@@ -275,20 +291,21 @@ func AskForLiveRoomStatus(match string, gid int64) (string, error) {
 		match = uid
 	}
 	if v, _ := SubscribedMap.Load(match); v != nil {
-		status, err := v.(*BiliUp).GetLiveRoomInfo()
+		_, err := v.(*BiliUp).GetLiveRoomInfo()
 		if err != nil {
 			myUtil.ErrLog.Println("查看直播状态时出错，error:", err)
 			return "被叔叔狠狠的抓住了（", err
 		}
-		if status {
-			return LiveRoomInfoFormat("", *v.(*BiliUp)), nil
+		if v.(*BiliUp).LiveRoom.Status {
+			return LiveRoomInfoFormat("", *v.(*BiliUp), display), nil
 		} else {
-			return v.(*BiliUp).Info.Data.InfoCard.Name + "当前没有直播哦~", nil
+			if display {
+				return v.(*BiliUp).Info.Data.InfoCard.Name + "当前没有直播哦~", nil
+			} else {
+				return "", nil
+			}
 		}
 	} else {
-		if !groupSwitch[gid] {
-			return "还没有开启相关功能哦！", nil
-		}
 		return "未找到相关up，可能是名称错误或者未关注", nil
 	}
 }
@@ -350,20 +367,62 @@ func getAllLiveByGid(mjson returnStruct.Message, ws *websocket.Conn) string {
 		myUtil.ErrLog.Println("获取群内关注 up 直播信息时出错")
 		return "查询失败，重试后仍然错误就可以暴打开发者了！"
 	}
-	var msg []string
-	for _, v := range list {
-		status, _ := AskForLiveRoomStatus(v, mjson.GroupID)
-		msg = append(msg, status)
-	}
-	go myUtil.SendForwardMsg(msg, mjson, ws)
+	go func() {
+		var msg []string
+		for _, v := range list {
+			status, _ := AskForLiveRoomStatus(v, mjson.GroupID, false)
+			if status != "" {
+				msg = append(msg, status)
+			}
+		}
+		if len(msg) == 0 {
+			myUtil.SendGroupMessage(ws, mjson.GroupID, "没有正在直播中的 up！")
+		} else {
+			myUtil.SendForwardMsg(LiveInfoSplit(msg), mjson, ws)
+		}
+	}()
 	return "正在获取相关直播信息~"
+}
+func getAllLiveByUid(mjson returnStruct.Message, ws *websocket.Conn) string {
+	list, ok := GetSubscribedListByUid(mjson.GroupID, mjson.UserID)
+	if !ok {
+		myUtil.ErrLog.Println("获取群内关注 up 直播信息时出错")
+		return "查询失败，重试后仍然错误就可以暴打开发者了！"
+	}
+	go func() {
+		var msg []string
+		for _, v := range list {
+			status, _ := AskForLiveRoomStatus(v, mjson.GroupID, false)
+			if status != "" {
+				msg = append(msg, status)
+			}
+		}
+		if len(msg) == 0 {
+			myUtil.SendGroupMessage(ws, mjson.GroupID, "没有正在直播中的 up！")
+		} else {
+			myUtil.SendForwardMsg(LiveInfoSplit(msg), mjson, ws)
+		}
+	}()
+	return "正在获取相关直播信息~"
+}
+func LiveInfoSplit(msg []string) [][]returnStruct.Node {
+	var ret [][]returnStruct.Node
+	for i := 0; ; i += 5 {
+		if i+5 < len(msg) {
+			ret = append(ret, myUtil.MakeForwardMsgNode(msg[i:i+5]))
+		} else {
+			ret = append(ret, myUtil.MakeForwardMsgNode(msg[i:]))
+			break
+		}
+	}
+	return ret
 }
 func GetSubscribedListByGid(gid int64) ([]string, bool) {
 	filter := bson.D{{"gid", gid}}
 	c := data.Db.Collection("subscribe")
 	cur, err := c.Find(context.TODO(), filter)
 	if err != nil {
-		myUtil.ErrLog.Println("获取用户b站关注列表时出现错误,error:", err)
+		myUtil.ErrLog.Println("获取群组b站关注列表时出现错误,error:", err, " gid:", gid)
 		return nil, false
 	}
 	var ret []string
@@ -377,4 +436,50 @@ func GetSubscribedListByGid(gid int64) ([]string, bool) {
 		ret = append(ret, elem.Subscribe)
 	}
 	return ret, true
+}
+func GetSubscribedListByUid(gid int64, uid int64) ([]string, bool) {
+	filter := bson.D{{"gid", gid}, {"uid", uid}}
+	c := data.Db.Collection("subscribe")
+	cur, err := c.Find(context.TODO(), filter)
+	if err != nil {
+		myUtil.ErrLog.Println("获取用户b站关注列表时出现错误,error:", err, " gid:", gid, " uid:", uid)
+		return nil, false
+	}
+	var ret []string
+	for cur.Next(context.TODO()) {
+		var elem subscribeList
+		err := cur.Decode(&elem)
+		if err != nil {
+			myUtil.ErrLog.Println(err)
+			return nil, false
+		}
+		ret = append(ret, elem.Subscribe)
+	}
+	return ret, true
+}
+
+type UpInfo struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Mid  string `json:"mid"`
+		Name string `json:"name"`
+		Face string `json:"face"`
+	} `json:"data"`
+}
+
+func GetUpInfoByUid(uid string) (*UpInfo, error) {
+	get, err := http.Get("https://api.bilibili.com/x/space/acc/info?mid=" + uid)
+	if err != nil {
+		return nil, err
+	}
+	defer get.Body.Close()
+	var body []byte
+	body, err = ioutil.ReadAll(get.Body)
+	var res UpInfo
+	err = json.Unmarshal(body, &res)
+	if res.Code != 0 {
+		return nil, errors.New("getting up info by uid error,message:" + res.Message)
+	}
+	return &res, nil
 }

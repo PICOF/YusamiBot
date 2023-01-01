@@ -9,12 +9,16 @@ import (
 	"github.com/skip2/go-qrcode"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"unicode"
 )
 
 var WsLock sync.Mutex
+var proxyIndex atomic.Uint32
+var PublicWs *websocket.Conn
 
 func IsInArray(array interface{}, target interface{}) (bool, int) {
 	a := reflect.ValueOf(array)
@@ -33,6 +37,19 @@ func SeseQrcode(dir string, filename string) (string, error) {
 	}
 	ret := base64.StdEncoding.EncodeToString(encode)
 	return ret, nil
+}
+func MakeForwardMsgNode(msg interface{}) []returnStruct.Node {
+	var resSet []returnStruct.Node
+	m := reflect.ValueOf(msg)
+	for i := 0; i < m.Len(); i++ {
+		a := returnStruct.Node{}
+		a.Type = "node"
+		a.Data.Uid = config.Settings.BotName.Id
+		a.Data.Name = config.Settings.BotName.FullName
+		a.Data.Content = m.Index(i).Interface()
+		resSet = append(resSet, a)
+	}
+	return resSet
 }
 func SendForwardMsg(msg interface{}, mjson returnStruct.Message, ws *websocket.Conn) error {
 	var fmsg returnStruct.SendMsg
@@ -85,6 +102,14 @@ func SendGroupMessage(ws *websocket.Conn, groupId int64, msg string) error {
 	WsLock.Unlock()
 	return err
 }
+func GetBase64CQCode(url string) string {
+	str := Pic2Base64ByUrl(url)
+	if str == "" {
+		return str
+	} else {
+		return "[CQ:image,file=base64://" + str + "]"
+	}
+}
 func Pic2Base64ByUrl(url string) string {
 	get, err := http.Get(url)
 	if err != nil {
@@ -103,4 +128,19 @@ func IsNumber(s string) bool {
 		}
 	}
 	return true
+}
+func GetProxyClient() *http.Client {
+	index := proxyIndex.Add(1) % uint32(len(config.Settings.Proxy.HttpsProxy))
+	uri, err := url.Parse(config.Settings.Proxy.HttpsProxy[index])
+	if err != nil {
+		ErrLog.Println("parse url error: ", err)
+		return &http.Client{}
+	}
+	client := &http.Client{
+		Transport: &http.Transport{
+			Proxy: http.ProxyURL(uri),
+		},
+	}
+	MsgLog.Println("使用代理：" + uri.String())
+	return client
 }

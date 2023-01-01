@@ -7,6 +7,7 @@ import (
 	"Lealra/config"
 	"Lealra/data"
 	"Lealra/handler"
+	"Lealra/learnResp"
 	"Lealra/myUtil"
 	"Lealra/note"
 	"Lealra/returnStruct"
@@ -43,6 +44,10 @@ func main() {
 	myUtil.SetLogger()
 	go myUtil.RenewLoggers()
 	aiTalk.GetCharacterList()
+	go bilibili.StartSubscribeScanner()
+	if config.Settings.LearnAndResponse.RenewSwitch {
+		go learnResp.StartExtendExpirationTimeLoop()
+	}
 	gin.DefaultWriter = io.MultiWriter(os.Stdout)
 	g := gin.Default()
 	g.LoadHTMLGlob("diary/template/*")
@@ -53,6 +58,7 @@ func main() {
 	g.GET("/msg", func(c *gin.Context) {
 		//进行一个websocket的升
 		ws, err := upgrade.Upgrade(c.Writer, c.Request, nil)
+		myUtil.PublicWs = ws
 		if err != nil {
 			log.Fatalln(err)
 		}
@@ -61,7 +67,6 @@ func main() {
 			<-c.Done()
 			fmt.Println("连接已断开", err.Error())
 		}()
-		go bilibili.StartSubscribeScanner(ws)
 		for {
 			// 读取客户端发送过来的消息，如果没发就会一直阻塞住
 			_, message, err := ws.ReadMessage()

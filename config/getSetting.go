@@ -23,18 +23,31 @@ type OpenAi struct {
 	Token string `yaml:"token"`
 }
 
+type Proxy struct {
+	HttpsProxy []string `yaml:"httpsProxy"`
+}
+
+type LearnAndResponse struct {
+	RenewSwitch  bool  `yaml:"renewSwitch"`
+	GroupToRenew int64 `yaml:"groupToRenew"`
+	MsgInterval  int64 `yaml:"msgInterval"`
+	UseBase64    bool  `yaml:"useBase64"`
+}
+
 type Setting struct {
-	Mode       MsgFilterMode   `yaml:"msgFilterMode"`
-	DataSource DataSource      `yaml:"dataSource"`
-	Func       Function        `yaml:"function"`
-	Auth       Auth            `yaml:"auth"`
-	Logs       Logs            `yaml:"logs"`
-	Server     Server          `yaml:"server"`
-	AiPaint    AiPaint         `yaml:"aiPaint"`
-	Setu       Setu            `yaml:"setu"`
-	BotName    BotName         `yaml:"botName"`
-	Bangumi    BangumiSettings `yaml:"bangumi"`
-	OpenAi     OpenAi          `yaml:"openAi"`
+	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
+	DataSource       DataSource       `yaml:"dataSource"`
+	Func             Function         `yaml:"function"`
+	Auth             Auth             `yaml:"auth"`
+	Logs             Logs             `yaml:"logs"`
+	Server           Server           `yaml:"server"`
+	AiPaint          AiPaint          `yaml:"aiPaint"`
+	Setu             Setu             `yaml:"setu"`
+	BotName          BotName          `yaml:"botName"`
+	Bangumi          BangumiSettings  `yaml:"bangumi"`
+	OpenAi           OpenAi           `yaml:"openAi"`
+	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
+	Proxy            Proxy            `yaml:"proxy"`
 }
 
 type MsgFilterMode struct {

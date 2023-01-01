@@ -149,11 +149,7 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 			}
 		}
 		if mflen <= 4 && ml[0] == "精华" {
-			args, err := selectedMsg.GetQueryString(ml[1:])
-			if err != nil {
-				return "查询参数格式出问题啦！", err
-			}
-			res, err = selectedMsg.GetSelectedMsg(mjson, args[0], args[1], args[2], args[3], ws)
+			res, err = selectedMsg.GetSelectedMsg(mjson, m[7:], ws)
 			return res, err
 		}
 	}

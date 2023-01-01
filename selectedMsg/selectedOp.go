@@ -7,10 +7,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/dlclark/regexp2"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -24,42 +26,37 @@ type SelectedMsg struct {
 	ID       int32  `bson:"message_id"`
 }
 
-func GetQueryString(query []string) ([4]string, error) {
+var queryArgs = []string{"name", "uid", "word", "date"}
+
+func GetSelectedMsg(mjson returnStruct.Message, query string, ws *websocket.Conn) (string, error) {
+	hasArgs := false
 	var args [4]string
 	var err error
-	var index int
-	for _, v := range query {
-		c := strings.Index(v, "：")
-		if c == -1 {
-			index = strings.Index(v, ":")
-			if index == -1 {
-				return args, errors.New("invalid query string: SetSelectedMsgQuery")
-			}
-		} else {
-			index = c
+	var compile *regexp2.Regexp
+	var match *regexp2.Match
+	for i, v := range queryArgs {
+		compile = regexp2.MustCompile("(?<="+v+"=)[^ ]+", 0)
+		match, err = compile.FindStringMatch(query)
+		if err != nil {
+			return "解析出错了！", err
 		}
-		switch v[:index] {
-		case "name":
-			args[0] = string([]rune(v)[index+1:])
-		case "uid":
-			args[1] = string([]rune(v)[index+1:])
-		case "word":
-			args[2] = string([]rune(v)[index+1:])
-		case "date":
-			args[3] = string([]rune(v)[index+1:])
-		default:
-			err = errors.New("invalid query string: SetSelectedMsgQuery")
+		if match != nil {
+			hasArgs = true
+			args[i] = match.String()
 		}
 	}
-	return args, err
-}
-
-func GetSelectedMsg(mjson returnStruct.Message, name string, uid string, word string, date string, ws *websocket.Conn) (string, error) {
+	if !hasArgs {
+		return "查询参数格式出问题啦！", errors.New("invalid query string: SetSelectedMsgQuery")
+	}
+	name := args[0]
+	uid := args[1]
+	word := args[2]
+	date := args[3]
 	c := data.Db.Collection("selectedMsg_" + strconv.FormatInt(mjson.GroupID, 10))
 	queryFlag := 0
 	var tfilter, nfilter, ufilter, wfilter bson.E
 	if name != "" {
-		nfilter = bson.E{Key: "nickname", Value: bson.D{{"$eq", name}}}
+		nfilter = bson.E{Key: "nickname", Value: bson.D{{"$regex", name}, {"$options", "i"}}}
 		queryFlag++
 	} else {
 		nfilter = bson.E{}
@@ -75,7 +72,7 @@ func GetSelectedMsg(mjson returnStruct.Message, name string, uid string, word st
 		ufilter = bson.E{}
 	}
 	if word != "" {
-		wfilter = bson.E{Key: "content", Value: bson.D{{"$regex", word}}}
+		wfilter = bson.E{Key: "content", Value: bson.D{{"$regex", word}, {"$options", "i"}}}
 		queryFlag++
 	} else {
 		wfilter = bson.E{}
@@ -130,7 +127,9 @@ func GetSelectedMsg(mjson returnStruct.Message, name string, uid string, word st
 	if err != nil {
 		myUtil.ErrLog.Println("Error marshalling:", err)
 	}
+	myUtil.WsLock.Lock()
 	err = ws.WriteMessage(returnStruct.MsgType, res)
+	myUtil.WsLock.Unlock()
 	return "", err
 }
 func SetSelected(mjson returnStruct.Message) (string, error) {
@@ -145,6 +144,7 @@ func SetSelected(mjson returnStruct.Message) (string, error) {
 		if msg.RetCode != 0 {
 			return "好像出现问题啦！" + msg.Wording, err
 		}
+		http.Get("http://localhost:5700/set_essence_msg?message_id=" + strconv.Itoa(int(msg.RetData.MessageID)))
 		if msg.RetData.Message == "" {
 			return "暂不支持这种消息的精华设置哦~", err
 		}

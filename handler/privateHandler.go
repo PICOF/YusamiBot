@@ -10,6 +10,7 @@ import (
 	"Lealra/returnStruct"
 	"Lealra/schoolTimeTable"
 	"github.com/gorilla/websocket"
+	"strconv"
 	"strings"
 )
 
@@ -40,9 +41,17 @@ func privateHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, err
 		if mjson.RawMessage == "看看新闻" {
 			return news.GetNews60s()
 		}
-		if ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, mjson.UserID); mjson.RawMessage == "刷新配置" && ok {
-			config.GetSetting()
-			return "刷新成功~", nil
+		if ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, mjson.UserID); ok {
+			switch mjson.RawMessage {
+			case "刷新配置":
+				config.GetSetting()
+				return "刷新成功~", nil
+			case "清理僵尸回复":
+				myUtil.SendGroupMessage(ws, mjson.GroupID, "嘟嘟嘟~开始清理啦！")
+				num1 := learnResp.ScanZombieResp(true)
+				num2 := learnResp.ScanZombieResp(false)
+				return "共清理\n" + strconv.Itoa(num1) + "条僵尸化的精确回复\n" + strconv.Itoa(num2) + "条僵尸化的模糊回复", nil
+			}
 		}
 	}
 	if mflen >= 2 {
