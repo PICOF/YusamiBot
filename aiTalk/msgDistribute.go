@@ -137,7 +137,14 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 	} else {
 		chat = BotMap[strconv.FormatInt(uid, 10)+botId].(*AiChat)
 		chat.Renew()
-		myUtil.SendGroupMessage(ws, groupId, "请继续说吧，我们上次聊到哪里了？\n("+chat.LastReply.Replies[chat.LastReply.Index].Text+")")
+		len := len(chat.LastReply.Replies)
+		if len != 0 {
+			myUtil.SendGroupMessage(ws, groupId, "请继续说吧，我们上次聊到哪里了？\n("+chat.LastReply.Replies[chat.LastReply.Index%len].Text+")")
+		} else {
+			BotMap[strconv.FormatInt(uid, 10)+botId] = nil
+			myUtil.SendGroupMessage(ws, groupId, "会话连接出现了意外问题！请尝试重新连接")
+		}
+
 	}
 	for {
 		select {
