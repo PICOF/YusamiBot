@@ -7,6 +7,7 @@ import (
 	"errors"
 	"github.com/Danny-Dasilva/CycleTLS/cycletls"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -175,7 +176,12 @@ func (aiChat *AiChat) SendMag(msg string) (bool, string, error) {
 		myUtil.ErrLog.Println("aiChat CreatedInfo.Participants 未获取到人格相关信息：", aiChat.CreatedInfo.Participants)
 		return false, "", errors.New("未找到 ai 对应的 internal_id")
 	}
-	aiChat.ClientOptions.Body = "{\"history_external_id\": \"" + aiChat.CreatedInfo.ExternalId + "\",\"character_external_id\": \"" + aiChat.BotId + "\",\"text\": \"" + msg + "\",\"tgt\": \"" + tgt + "\",\"ranking_method\": \"random\",\"staging\": false,\"model_server_address\": null,\"override_prefix\": null,\"override_rank\": null,\"rank_candidates\": null,\"filter_candidates\": null,\"prefix_limit\": null,\"prefix_token_limit\": null,\"livetune_coeff\": null,\"stream_params\": null,\"enable_tti\": true,\"initial_timeout\": null,\"insert_beginning\": null,\"translate_candidates\": null,\"stream_every_n_steps\": 16,\"chunks_to_pad\": 8,\"is_proactive\": false,\"image_rel_path\": \"\",\"image_description\": \"\",\"image_description_type\": \"\",\"image_origin_type\": \"\",\"voice_enabled\": false}"
+	primaryMsgId := aiChat.LastReply.Replies[aiChat.LastReply.Index%len(aiChat.LastReply.Replies)].ID
+	if primaryMsgId != 0 {
+		aiChat.ClientOptions.Body = "{\"history_external_id\": \"" + aiChat.CreatedInfo.ExternalId + "\",\"character_external_id\": \"" + aiChat.BotId + "\",\"text\": \"" + msg + "\",\"tgt\": \"" + tgt + "\",\"ranking_method\": \"random\",\"primary_msg_id\":" + strconv.FormatInt(primaryMsgId, 10) + ",\"staging\": false,\"model_server_address\": null,\"override_prefix\": null,\"override_rank\": null,\"rank_candidates\": null,\"filter_candidates\": null,\"prefix_limit\": null,\"prefix_token_limit\": null,\"livetune_coeff\": null,\"stream_params\": null,\"enable_tti\": true,\"initial_timeout\": null,\"insert_beginning\": null,\"translate_candidates\": null,\"stream_every_n_steps\": 16,\"chunks_to_pad\": 8,\"is_proactive\": false,\"image_rel_path\": \"\",\"image_description\": \"\",\"image_description_type\": \"\",\"image_origin_type\": \"\",\"voice_enabled\": false}"
+	} else {
+		aiChat.ClientOptions.Body = "{\"history_external_id\": \"" + aiChat.CreatedInfo.ExternalId + "\",\"character_external_id\": \"" + aiChat.BotId + "\",\"text\": \"" + msg + "\",\"tgt\": \"" + tgt + "\",\"ranking_method\": \"random\",\"staging\": false,\"model_server_address\": null,\"override_prefix\": null,\"override_rank\": null,\"rank_candidates\": null,\"filter_candidates\": null,\"prefix_limit\": null,\"prefix_token_limit\": null,\"livetune_coeff\": null,\"stream_params\": null,\"enable_tti\": true,\"initial_timeout\": null,\"insert_beginning\": null,\"translate_candidates\": null,\"stream_every_n_steps\": 16,\"chunks_to_pad\": 8,\"is_proactive\": false,\"image_rel_path\": \"\",\"image_description\": \"\",\"image_description_type\": \"\",\"image_origin_type\": \"\",\"voice_enabled\": false}"
+	}
 	post, err := aiChat.Client.Do("https://beta.character.ai/chat/streaming/", aiChat.ClientOptions, "POST")
 	if err != nil {
 		return false, "", err

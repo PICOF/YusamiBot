@@ -29,7 +29,7 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 	name := strconv.FormatInt(mjson.GroupID, 10) + strconv.FormatInt(mjson.UserID, 10)
 	if len(ml) >= 2 {
 		if _, ok := OpenAiMap[name]; !ok {
-			OpenAiMap[name] = &OpenAiPersonal{Memory: false}
+			OpenAiMap[name] = &OpenAiPersonal{}
 		}
 		switch ml[0] {
 		case "/talk":

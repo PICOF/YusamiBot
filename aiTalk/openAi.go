@@ -14,7 +14,6 @@ type OpenAiPersonal struct {
 	Preset  string
 	Context string
 	Reply   string
-	Memory  bool
 }
 
 type OpenAiReply struct {
@@ -39,7 +38,7 @@ func (openAi *OpenAiPersonal) EditMsg(text string, require string) (string, erro
 	if err != nil {
 		return "哎呀，出错了！", err
 	}
-	body := "{\"model\": " + config.Settings.OpenAi.Setting.EditSetting.Model + ", \"input\": " + encoded.String() + ", \"instruction\": \"" + require + "\"}"
+	body := "{\"model\": \"" + config.Settings.OpenAi.Setting.EditSetting.Model + "\", \"input\": " + encoded.String() + ", \"instruction\": \"" + require + "\"}"
 	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/edits", bytes.NewBuffer([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+config.Settings.OpenAi.Token)
@@ -100,7 +99,7 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 	if err != nil {
 		return "哎呀，出错了！", err
 	}
-	if openAi.Memory {
+	if config.Settings.OpenAi.Setting.ChatSetting.Memory {
 		openAi.Context += openAi.Reply
 		openAi.Context += text
 		openAi.Reply = strings.Trim(reply.Choices[0].Text, "\n ") + "\\n"

@@ -31,22 +31,38 @@ var bangumiCalendar BangumiCalendar
 var weekdays = []string{"星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"}
 
 func BangumiNewsHandler(msg []string, mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
-	if msg[0] != "番剧" || len(msg) < 2 || len(msg) > 3 {
+	if msg[0] != "番剧" || len(msg) < 2 {
 		return "", nil
 	}
 	switch msg[1] {
 	case "今日更新":
-		res, err := bangumiofToday(mjson, ws)
+		if len(msg) == 2 {
+			res, err := bangumiOfWeekday(time.Now().Weekday())
+			if err != nil {
+				return "呜哇哇~失去与二次元之间的连接了！", err
+			}
+			err = myUtil.SendForwardMsg(res, mjson, ws)
+			if err != nil {
+				myUtil.ErrLog.Println("发送bangumi今日时间表时出现错误,error:", err)
+				return config.Settings.BotName.Name + " 的电波被邪恶的大魔王拦截了！", err
+			}
+		}
+	case "搜索":
+		res, err := findBangumi(strings.Join(msg[2:], " "), mjson, ws)
 		if err != nil {
 			return res, err
 		}
-	case "搜索":
-		if len(msg) == 3 {
-			res, err := findBangumi(msg[2], mjson, ws)
+	case "全部番剧":
+		if len(msg) == 2 {
+			res, err := bangumiOfOneWeek()
+			err = myUtil.SendForwardMsg(res, mjson, ws)
 			if err != nil {
-				return res, err
+				myUtil.ErrLog.Println("发送bangumi整周时间表时出现错误,error:", err)
+				return config.Settings.BotName.Name + " 的电波被邪恶的大魔王拦截了！", err
 			}
 		}
+	default:
+		return "", nil
 	}
 	return "合理安排时间，愉悦追番哦~(*^_^*)", nil
 }
@@ -70,13 +86,9 @@ func packMsg(bangumi Bangumi) string {
 func findBangumi(target string, mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
 	var table BangumiCalendar
 	var err error
-	if bangumiCalendar.CreateDate == 0 {
-		table, err = renewTable()
-		if err != nil {
-			return "呜哇哇~失去与二次元之间的连接了！", err
-		}
-	} else {
-		table = bangumiCalendar
+	table, err = renewTable()
+	if err != nil {
+		return "呜哇哇~失去与二次元之间的连接了！", err
 	}
 	var msgs []string
 	for i, weekday := range table.Weekdays {
@@ -87,7 +99,8 @@ func findBangumi(target string, mjson returnStruct.Message, ws *websocket.Conn) 
 		}
 	}
 	if len(msgs) == 0 {
-		return "未找到相关番剧呢，换个词再搜搜吧~", errors.New("cannot find bangumi")
+		myUtil.MsgLog.Println("cannot find bangumi")
+		return "未找到相关番剧呢，换个词再搜搜吧~", nil
 	}
 	err = myUtil.SendForwardMsg(msgs, mjson, ws)
 	if err != nil {
@@ -97,31 +110,40 @@ func findBangumi(target string, mjson returnStruct.Message, ws *websocket.Conn) 
 	return "", nil
 }
 
-func bangumiofToday(mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
+func bangumiOfWeekday(weekday time.Weekday) ([]string, error) {
 	var table BangumiCalendar
 	var err error
-	if bangumiCalendar.CreateDate == 0 {
-		table, err = renewTable()
-		if err != nil {
-			return "呜哇哇~失去与二次元之间的连接了！", err
-		}
-	} else {
-		table = bangumiCalendar
-	}
-	today := table.Weekdays[time.Now().Weekday()]
-	var msgs []string
-	for _, bangumi := range today.Bangumi {
-		msgs = append(msgs, packMsg(bangumi))
-	}
-	err = myUtil.SendForwardMsg(msgs, mjson, ws)
+	table, err = renewTable()
 	if err != nil {
-		myUtil.ErrLog.Println("发送bangumi今日时间表时出现错误,error:", err)
-		return config.Settings.BotName.Name + " 的电波被邪恶的大魔王拦截了！", err
+		return nil, err
 	}
-	return "", nil
+	today := table.Weekdays[weekday]
+	var msg []string
+	for _, bangumi := range today.Bangumi {
+		msg = append(msg, packMsg(bangumi))
+	}
+	return msg, nil
+}
+
+func bangumiOfOneWeek() ([]interface{}, error) {
+	var res []string
+	var err error
+	var ret []interface{}
+	for i, v := range weekdays {
+		res, err = bangumiOfWeekday(time.Weekday(i))
+		if err != nil {
+			return nil, err
+		}
+		ret = append(ret, "【"+v+"】⬇")
+		ret = append(ret, myUtil.MakeForwardMsgNode(res))
+	}
+	return ret, nil
 }
 
 func renewTable() (BangumiCalendar, error) {
+	if bangumiCalendar.CreateDate != 0 && time.Now().Unix()-bangumiCalendar.CreateDate < 86400 {
+		return bangumiCalendar, nil
+	}
 	res, err := http.Get("https://bangumi.tv/calendar")
 	if err != nil {
 		myUtil.ErrLog.Println("连接bangumi时间表时出现错误,error:", err)

@@ -21,6 +21,7 @@ type BangumiSettings struct {
 
 type OpenAiSetting struct {
 	ChatSetting struct {
+		Memory           bool   `yaml:"memory"`
 		Model            string `yaml:"model"`
 		MaxTokens        string `yaml:"maxTokens"`
 		Temperature      string `yaml:"temperature"`
