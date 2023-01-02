@@ -7,9 +7,8 @@ import (
 )
 
 type Character struct {
-	BotName   string `yaml:"botName"`
-	BotId     string `yaml:"botId"`
-	Greetings string `yaml:"greetings"`
+	BotName string `yaml:"botName"`
+	BotId   string `yaml:"botId"`
 }
 
 var CharList []Character

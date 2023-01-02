@@ -1,18 +1,19 @@
 package aiTalk
 
 import (
-	"bytes"
+	"Lealra/config"
+	"Lealra/myUtil"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"github.com/Danny-Dasilva/CycleTLS/cycletls"
 	"math/rand"
-	"net/http"
 	"strings"
 	"time"
 )
 
 type Reply struct {
 	Replies []Text `json:"replies"`
+	Index   int
 }
 
 type Text struct {
@@ -21,17 +22,18 @@ type Text struct {
 }
 
 type ChatCreate struct {
-	ExternalId   string        `json:"external_id"`
-	Created      string        `json:"created"`
-	Participants []Participant `json:"participants"`
-}
-
-type Participant struct {
-	User User `json:"user"`
-}
-
-type User struct {
-	Username string `json:"username"`
+	ExternalId   string `json:"external_id"`
+	Created      string `json:"created"`
+	Participants []struct {
+		User struct {
+			Username string `json:"username"`
+		} `json:"user"`
+		IsHuman bool `json:"is_human"`
+	} `json:"participants"`
+	Status   string `json:"status"`
+	Messages []struct {
+		Text string `json:"text"`
+	} `json:"messages"`
 }
 
 type LazyUuid struct {
@@ -40,12 +42,13 @@ type LazyUuid struct {
 }
 
 type AiChat struct {
-	BotId       string
-	Cookies     []*http.Cookie
-	Token       string
-	Uuid        string
-	CreatedInfo ChatCreate
-	Count       int
+	BotId         string
+	Uuid          string
+	CreatedInfo   ChatCreate
+	Count         int
+	Client        cycletls.CycleTLS
+	ClientOptions cycletls.Options
+	LastReply     Reply
 }
 
 const letters = "123567890abcdef"
@@ -54,6 +57,7 @@ func (aiChat *AiChat) SetBot(BotId string) (bool, error) {
 	//给什么是什么
 	aiChat.BotId = BotId
 	aiChat.getLazyUuid()
+	aiChat.initClient()
 	token, err := aiChat.getToken()
 	if err != nil {
 		return token, err
@@ -63,6 +67,21 @@ func (aiChat *AiChat) SetBot(BotId string) (bool, error) {
 		return conversation, err
 	}
 	return true, nil
+}
+
+func (aiChat *AiChat) initClient() {
+	client := cycletls.Init()
+	options := cycletls.Options{
+		Timeout: config.Settings.AntiCf.Timeout,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+		Proxy:     config.Settings.AntiCf.Proxy,
+		Ja3:       config.Settings.AntiCf.Ja3,
+		UserAgent: config.Settings.AntiCf.UserAgent,
+	}
+	aiChat.Client = client
+	aiChat.ClientOptions = options
 }
 
 func (aiChat *AiChat) getLazyUuid() {
@@ -79,53 +98,55 @@ func (aiChat *AiChat) getLazyUuid() {
 	aiChat.Uuid = ret
 }
 func (aiChat *AiChat) getToken() (bool, error) {
-	if aiChat.Uuid == "" {
-		return false, nil
-	}
-	post, err := http.Post("https://beta.character.ai/chat/auth/lazy/", "application/json", bytes.NewBuffer([]byte("{\"lazy_uuid\":\""+aiChat.Uuid+"\"}")))
+	aiChat.ClientOptions.Body = "{\"lazy_uuid\":\"" + aiChat.Uuid + "\"}"
+	post, err := aiChat.Client.Do("https://beta.character.ai/chat/auth/lazy/", aiChat.ClientOptions, "POST")
 	if err != nil {
 		return false, err
 	}
-	defer post.Body.Close()
-	var body []byte
-	body, err = ioutil.ReadAll(post.Body)
 	var msg LazyUuid
-	err = json.Unmarshal(body, &msg)
+	err = json.Unmarshal([]byte(post.Body), &msg)
 	if err != nil {
-		println(string(body), aiChat.Uuid)
+		myUtil.ErrLog.Println(post.Body, aiChat.Uuid)
 		return false, err
 	}
 	if !msg.Success {
 		return false, errors.New("bad request,get token failed")
 	}
-	aiChat.Token = msg.Token
-	aiChat.Cookies = post.Cookies()
+	aiChat.ClientOptions.Headers["authorization"] = "Token " + msg.Token
 	return true, nil
 }
 func (aiChat *AiChat) createConversation() (bool, error) {
-	if aiChat.Token == "" {
+	if aiChat.ClientOptions.Headers["authorization"] == "" {
 		return false, errors.New("no token,please create")
 	}
-	body := "{\"character_external_id\": \"" + aiChat.BotId + "\",\"override_history_set\": null}"
-	req, _ := http.NewRequest("POST", "https://beta.character.ai/chat/history/create/", bytes.NewBuffer([]byte(body)))
-	for _, c := range aiChat.Cookies {
-		req.AddCookie(c)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("authorization", "Token "+aiChat.Token)
-	resp, err := (&http.Client{}).Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-	var content []byte
-	content, err = ioutil.ReadAll(resp.Body)
 	var msg ChatCreate
-	err = json.Unmarshal(content, &msg)
-	if err != nil {
-		return false, err
+	var post cycletls.Response
+	var err error
+	var success bool
+	aiChat.ClientOptions.Body = "{\"character_external_id\": \"" + aiChat.BotId + "\",\"override_history_set\": null}"
+	for i := 0; i < 3; i++ {
+		post, err = aiChat.Client.Do("https://beta.character.ai/chat/history/create/", aiChat.ClientOptions, "POST")
+		if err != nil {
+			return false, err
+		}
+		err = json.Unmarshal([]byte(post.Body), &msg)
+		if err != nil {
+			return false, err
+		}
+		if len(msg.Participants) > 1 {
+			success = true
+			break
+		}
+	}
+	if !success || msg.Status != "OK" {
+		return false, errors.New("创建聊天时出现错误：\n" + post.Body)
 	}
 	aiChat.CreatedInfo = msg
+	if len(msg.Messages) > 0 {
+		aiChat.LastReply = Reply{Replies: []Text{{Text: msg.Messages[0].Text}}, Index: 0}
+	} else {
+		aiChat.LastReply = Reply{Replies: []Text{{Text: "该人格暂无问候语，请直接开始对话"}}, Index: 0}
+	}
 	return true, nil
 }
 func (aiChat *AiChat) Renew() (bool, error) {
@@ -143,30 +164,40 @@ func (aiChat *AiChat) SendMag(msg string) (bool, string, error) {
 		aiChat.Count = 0
 	}
 	aiChat.Count++
-	body := "{\"history_external_id\": \"" + aiChat.CreatedInfo.ExternalId + "\",\"character_external_id\": \"" + aiChat.BotId + "\",\"text\": \"" + msg + "\",\"tgt\": \"" + aiChat.CreatedInfo.Participants[1].User.Username + "\",\"ranking_method\": \"random\",\"staging\": false,\"model_server_address\": null,\"override_prefix\": null,\"override_rank\": null,\"rank_candidates\": null,\"filter_candidates\": null,\"prefix_limit\": null,\"prefix_token_limit\": null,\"livetune_coeff\": null,\"stream_params\": null,\"enable_tti\": true,\"initial_timeout\": null,\"insert_beginning\": null,\"translate_candidates\": null,\"stream_every_n_steps\": 16,\"chunks_to_pad\": 8,\"is_proactive\": false,\"image_rel_path\": \"\",\"image_description\": \"\",\"image_description_type\": \"\",\"image_origin_type\": \"\",\"voice_enabled\": false}"
-	req, _ := http.NewRequest("POST", "https://beta.character.ai/chat/streaming/", bytes.NewBuffer([]byte(body)))
-	for _, c := range aiChat.Cookies {
-		req.AddCookie(c)
+	var tgt string
+	for _, v := range aiChat.CreatedInfo.Participants {
+		if !v.IsHuman {
+			tgt = v.User.Username
+			break
+		}
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("authorization", "Token "+aiChat.Token)
-	resp, err := (&http.Client{}).Do(req)
+	if tgt == "" {
+		myUtil.ErrLog.Println("aiChat CreatedInfo.Participants 未获取到人格相关信息：", aiChat.CreatedInfo.Participants)
+		return false, "", errors.New("未找到 ai 对应的 internal_id")
+	}
+	aiChat.ClientOptions.Body = "{\"history_external_id\": \"" + aiChat.CreatedInfo.ExternalId + "\",\"character_external_id\": \"" + aiChat.BotId + "\",\"text\": \"" + msg + "\",\"tgt\": \"" + tgt + "\",\"ranking_method\": \"random\",\"staging\": false,\"model_server_address\": null,\"override_prefix\": null,\"override_rank\": null,\"rank_candidates\": null,\"filter_candidates\": null,\"prefix_limit\": null,\"prefix_token_limit\": null,\"livetune_coeff\": null,\"stream_params\": null,\"enable_tti\": true,\"initial_timeout\": null,\"insert_beginning\": null,\"translate_candidates\": null,\"stream_every_n_steps\": 16,\"chunks_to_pad\": 8,\"is_proactive\": false,\"image_rel_path\": \"\",\"image_description\": \"\",\"image_description_type\": \"\",\"image_origin_type\": \"\",\"voice_enabled\": false}"
+	post, err := aiChat.Client.Do("https://beta.character.ai/chat/streaming/", aiChat.ClientOptions, "POST")
 	if err != nil {
 		return false, "", err
 	}
-	defer resp.Body.Close()
-	var content []byte
-	content, err = ioutil.ReadAll(resp.Body)
-	res := strings.Split(string(content), "          ")
+	res := strings.Split(post.Body, "          ")
 	text := res[len(res)-1]
 	var reply Reply
 	err = json.Unmarshal([]byte(text), &reply)
 	if err != nil {
 		return false, "", err
 	}
-	aiChat.Cookies = resp.Cookies()
 	if reply.Replies == nil {
-		return false, "", errors.New("可能是身份验证问题")
+		return false, "", errors.New("消息发送时出现问题 " + post.Body)
 	}
+	aiChat.LastReply = reply
 	return true, reply.Replies[0].Text, nil
+}
+func (aiChat *AiChat) GetAnotherMsg() string {
+	len := len(aiChat.LastReply.Replies)
+	if len < 2 {
+		return "暂无可更换的对话！"
+	}
+	aiChat.LastReply.Index++
+	return aiChat.LastReply.Replies[aiChat.LastReply.Index%len].Text
 }

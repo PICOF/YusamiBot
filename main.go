@@ -99,8 +99,15 @@ func main() {
 	g.GET("/diary/:uid/:date", func(c *gin.Context) {
 		strUid := c.Param("uid")
 		date := c.Param("date")
-		if config.Settings.Func.PrivateDiary && strUid == "1730483316" {
+		atoi, err := strconv.Atoi(strUid)
+		if err != nil {
 			return
+		}
+		if config.Settings.Func.PrivateDiary {
+			ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, int64(atoi))
+			if ok {
+				return
+			}
 		}
 		uid, err := strconv.ParseInt(strUid, 10, 64)
 		if err != nil {
@@ -109,7 +116,7 @@ func main() {
 		}
 		notes, err := note.GetNotes(uid, date)
 		if err != nil {
-			myUtil.ErrLog.Println("获取每日实时记录失败！")
+			myUtil.ErrLog.Println("获取每日实时记录失败！error: ", err)
 			return
 		}
 		c.HTML(http.StatusOK, "diary.tmpl", struct {

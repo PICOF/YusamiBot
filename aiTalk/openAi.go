@@ -11,7 +11,6 @@ import (
 )
 
 type OpenAiPersonal struct {
-	Model   string
 	Preset  string
 	Context string
 	Reply   string
@@ -40,7 +39,7 @@ func (openAi *OpenAiPersonal) EditMsg(text string, require string) (string, erro
 	if err != nil {
 		return "哎呀，出错了！", err
 	}
-	body := "{\"model\": \"code-davinci-edit-001\", \"input\": " + encoded.String() + ", \"instruction\": \"" + require + "\"}"
+	body := "{\"model\": " + config.Settings.OpenAi.Setting.EditSetting.Model + ", \"input\": " + encoded.String() + ", \"instruction\": \"" + require + "\"}"
 	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/edits", bytes.NewBuffer([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+config.Settings.OpenAi.Token)
@@ -73,7 +72,7 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 		openAi.Preset = ""
 		return "刷新成功！", nil
 	case "配置":
-		return "模型：" + openAi.Model + "\n预设：" + openAi.Preset, nil
+		return "模型：" + config.Settings.OpenAi.Setting.ChatSetting.Model + "\n预设：" + openAi.Preset, nil
 	default:
 		text += "\n"
 	}
@@ -82,7 +81,7 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 	if err != nil {
 		return "哎呀，出错了！", err
 	}
-	body := "{\"model\": \"" + openAi.Model + "\",\"prompt\": " + encoded.String() + ",\"max_tokens\": 1024,\"temperature\": 0.9,\"top_p\": 1,\"frequency_penalty\": 0,\"presence_penalty\": 0.6,\"stream\": false}"
+	body := "{\"model\": \"" + config.Settings.OpenAi.Setting.ChatSetting.Model + "\",\"prompt\": " + encoded.String() + ",\"max_tokens\": " + config.Settings.OpenAi.Setting.ChatSetting.MaxTokens + ",\"temperature\": " + config.Settings.OpenAi.Setting.ChatSetting.Temperature + ",\"top_p\": " + config.Settings.OpenAi.Setting.ChatSetting.TopP + ",\"frequency_penalty\": " + config.Settings.OpenAi.Setting.ChatSetting.FrequencyPenalty + ",\"presence_penalty\": " + config.Settings.OpenAi.Setting.ChatSetting.PresencePenalty + ",\"stream\": false}"
 	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/completions", bytes.NewBuffer([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+config.Settings.OpenAi.Token)

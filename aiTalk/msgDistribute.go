@@ -29,7 +29,7 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 	name := strconv.FormatInt(mjson.GroupID, 10) + strconv.FormatInt(mjson.UserID, 10)
 	if len(ml) >= 2 {
 		if _, ok := OpenAiMap[name]; !ok {
-			OpenAiMap[name] = &OpenAiPersonal{Model: "text-davinci-003", Memory: false}
+			OpenAiMap[name] = &OpenAiPersonal{Memory: false}
 		}
 		switch ml[0] {
 		case "/talk":
@@ -114,10 +114,12 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 }
 
 func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int64) {
-	var chat AiChat
+	var chat *AiChat
 	botId := CharList[botNum].BotId
 	name := strconv.FormatInt(groupId, 10) + strconv.FormatInt(uid, 10)
 	if BotMap[strconv.FormatInt(uid, 10)+botId] == nil {
+		BotMap[strconv.FormatInt(uid, 10)+botId] = &AiChat{}
+		chat = BotMap[strconv.FormatInt(uid, 10)+botId].(*AiChat)
 		bot, err := chat.SetBot(botId)
 		if !bot {
 			myUtil.ErrLog.Println("群组", groupId, "的", uid, "建立 aiTalk 初始化失败,error:", err)
@@ -126,29 +128,45 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 			MsgDistributeMap[name] = nil
 			return
 		}
-		myUtil.SendGroupMessage(ws, groupId, CharList[botNum].Greetings)
+		if len(chat.CreatedInfo.Messages) > 0 {
+			myUtil.SendGroupMessage(ws, groupId, chat.CreatedInfo.Messages[0].Text)
+		} else {
+			myUtil.SendGroupMessage(ws, groupId, "该人格暂无问候语，请直接开始对话")
+		}
 		BotMap[strconv.FormatInt(uid, 10)+botId] = chat
 	} else {
-		chat = BotMap[strconv.FormatInt(uid, 10)+botId].(AiChat)
+		chat = BotMap[strconv.FormatInt(uid, 10)+botId].(*AiChat)
 		chat.Renew()
-		myUtil.SendGroupMessage(ws, groupId, "请继续说吧，我们上次聊到哪里了？")
-		BotMap[strconv.FormatInt(uid, 10)+botId] = chat
+		myUtil.SendGroupMessage(ws, groupId, "请继续说吧，我们上次聊到哪里了？\n("+chat.LastReply.Replies[chat.LastReply.Index].Text+")")
 	}
 	for {
 		select {
 		case text, ok := <-MsgDistributeMap[name]:
 			if ok {
-				if text == "刷新" {
-					var newChat AiChat
-					bot, err := newChat.SetBot(botId)
+				switch text {
+				case "刷新":
+					bot, err := chat.SetBot(botId)
 					if !bot {
 						myUtil.ErrLog.Println("群组", groupId, "的", uid, "刷新 aiTalk 失败,error:", err)
 					} else {
-						BotMap[strconv.FormatInt(uid, 10)+botId] = newChat
-						chat = newChat
-						myUtil.SendGroupMessage(ws, groupId, CharList[botNum].Greetings)
+						if len(chat.CreatedInfo.Messages) > 0 {
+							myUtil.SendGroupMessage(ws, groupId, chat.CreatedInfo.Messages[0].Text)
+						} else {
+							myUtil.SendGroupMessage(ws, groupId, "该人格暂无问候语，请直接开始对话")
+						}
 					}
-				} else {
+				case "重连":
+					renew, err := chat.Renew()
+					if renew {
+						BotMap[strconv.FormatInt(uid, 10)+botId] = chat
+						myUtil.SendGroupMessage(ws, groupId, "重连成功！")
+					} else {
+						myUtil.ErrLog.Println("群组", groupId, "的", uid, "重连 aiTalk 失败,error:", err)
+						myUtil.SendGroupMessage(ws, groupId, "重连失败！请稍后重试，仍存在问题请告知开发者")
+					}
+				case "换一句":
+					myUtil.SendGroupMessage(ws, groupId, chat.GetAnotherMsg())
+				default:
 					_, msg, err := chat.SendMag(text)
 					if err != nil {
 						myUtil.ErrLog.Println("收取aiTalk回复失败,error:", err)

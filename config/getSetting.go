@@ -19,8 +19,23 @@ type BangumiSettings struct {
 	MaxPoolSize   int  `yaml:"maxPoolSize"`
 }
 
+type OpenAiSetting struct {
+	ChatSetting struct {
+		Model            string `yaml:"model"`
+		MaxTokens        string `yaml:"maxTokens"`
+		Temperature      string `yaml:"temperature"`
+		TopP             string `yaml:"topP"`
+		FrequencyPenalty string `yaml:"frequencyPenalty"`
+		PresencePenalty  string `yaml:"presencePenalty"`
+	} `yaml:"chat"`
+	EditSetting struct {
+		Model string `yaml:"model"`
+	} `yaml:"edit"`
+}
+
 type OpenAi struct {
-	Token string `yaml:"token"`
+	Token   string        `yaml:"token"`
+	Setting OpenAiSetting `yaml:"settings"`
 }
 
 type Proxy struct {
@@ -32,6 +47,13 @@ type LearnAndResponse struct {
 	GroupToRenew int64 `yaml:"groupToRenew"`
 	MsgInterval  int64 `yaml:"msgInterval"`
 	UseBase64    bool  `yaml:"useBase64"`
+}
+
+type AntiCf struct {
+	Ja3       string `yaml:"ja3"`
+	UserAgent string `yaml:"userAgent"`
+	Timeout   int    `yaml:"timeout"`
+	Proxy     string `yaml:"proxy"`
 }
 
 type Setting struct {
@@ -47,6 +69,7 @@ type Setting struct {
 	Bangumi          BangumiSettings  `yaml:"bangumi"`
 	OpenAi           OpenAi           `yaml:"openAi"`
 	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
+	AntiCf           AntiCf           `yaml:"antiCf"`
 	Proxy            Proxy            `yaml:"proxy"`
 }
 

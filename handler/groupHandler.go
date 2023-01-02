@@ -52,56 +52,54 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 		}
 	}
 	if mflen >= 2 {
-		if len(m) > 21 {
-			if mflen == 2 {
-				if ml[0] == "日记页面" {
-					res, err = note.GetQrcode(mjson.UserID, ml[1])
-					if res != "" {
-						return res, err
-					}
-				}
-				if ml[0] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
-					if strings.Contains(ml[1], "课") {
-						res, err := SchoolTimeTable(ml[1], mjson.UserID)
-						if res != "" {
-							return res, err
-						}
-					}
-					if ml[1] == "查看已绑定学号" {
-						res, err := schoolTimeTable.GetSid(mjson.UserID)
-						if res != "" {
-							return "您已绑定的学号为：" + res, err
-						}
-					}
-				}
-			}
-			if mflen == 2 && ml[0] == "绑定学号" {
-				res, err := schoolTimeTable.SetSid(ml[1], mjson.UserID)
+		if mflen == 2 {
+			if ml[0] == "日记页面" {
+				res, err = note.GetQrcode(mjson.UserID, ml[1])
 				if res != "" {
 					return res, err
 				}
 			}
-			if m[1:9] == "CQ:reply" {
-				if ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, mjson.UserID); ok {
-					if ok, index := myUtil.IsInArray(ml, "模糊学习"); ok && index < len(ml)-1 {
-						res, err = learnResp.LearnResp(mjson, false)
-					} else if ok, index = myUtil.IsInArray(ml, "忘记"); ok && index < len(ml)-1 {
-						res, err = learnResp.Forget(mjson)
-					}
+			if ml[0] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
+				if strings.Contains(ml[1], "课") {
+					res, err := SchoolTimeTable(ml[1], mjson.UserID)
 					if res != "" {
 						return res, err
 					}
 				}
-				if ok, index := myUtil.IsInArray(ml, "学习"); ok && index < len(ml)-1 {
-					res, err = learnResp.LearnResp(mjson, true)
+				if ml[1] == "查看已绑定学号" {
+					res, err := schoolTimeTable.GetSid(mjson.UserID)
+					if res != "" {
+						return "您已绑定的学号为：" + res, err
+					}
+				}
+			}
+		}
+		if mflen == 2 && ml[0] == "绑定学号" {
+			res, err := schoolTimeTable.SetSid(ml[1], mjson.UserID)
+			if res != "" {
+				return res, err
+			}
+		}
+		if len(m) > 10 && m[1:9] == "CQ:reply" {
+			if ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, mjson.UserID); ok {
+				if ok, index := myUtil.IsInArray(ml, "模糊学习"); ok && index < len(ml)-1 {
+					res, err = learnResp.LearnResp(mjson, false)
+				} else if ok, index = myUtil.IsInArray(ml, "忘记"); ok && index < len(ml)-1 {
+					res, err = learnResp.Forget(mjson)
 				}
 				if res != "" {
 					return res, err
 				}
-				res, err = selectedMsg.SetSelected(mjson)
-				if res != "" {
-					return res, err
-				}
+			}
+			if ok, index := myUtil.IsInArray(ml, "学习"); ok && index < len(ml)-1 {
+				res, err = learnResp.LearnResp(mjson, true)
+			}
+			if res != "" {
+				return res, err
+			}
+			res, err = selectedMsg.SetSelected(mjson)
+			if res != "" {
+				return res, err
 			}
 		}
 		res, err = bilibili.SubscribeHandler(ws, mjson, ml)
