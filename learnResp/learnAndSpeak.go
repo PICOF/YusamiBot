@@ -36,9 +36,6 @@ func LearnResp(mjson returnStruct.Message, isAccurate bool) (string, error) {
 		col = data.Db.Collection("learnedResp")
 	}
 	resp := regexp.MustCompile("subType=[0-9]*").ReplaceAllString(msg.RetData.Message, "subType=0")
-	if config.Settings.LearnAndResponse.UseBase64 {
-		//CQCode2Base64(resp)
-	}
 	filter := bson.D{{"text", string([]rune(mjson.RawMessage)[len([]rune(mjson.RawMessage[:strings.Index(mjson.RawMessage, "学习")]))+3:])}, {"resp", resp}}
 	_, err = col.InsertOne(context.TODO(), filter)
 	if err != nil {
@@ -47,6 +44,9 @@ func LearnResp(mjson returnStruct.Message, isAccurate bool) (string, error) {
 		} else {
 			myUtil.ErrLog.Println("学习新回复"+mjson.RawMessage+"-->"+msg.RawMessage+"时出错：", err)
 		}
+	}
+	if config.Settings.LearnAndResponse.UseBase64 {
+		myUtil.LocalPicStorageUpdate(myUtil.StoreCQCode2Base64(resp))
 	}
 	return "学习成功！", err
 }
@@ -62,7 +62,7 @@ func Speak(mjson returnStruct.Message, isAccurate bool) (string, error) {
 	if isAccurate {
 		aggregate, err := col.Aggregate(context.TODO(), mongo.Pipeline{bson.D{{"$match", bson.D{{"text", mjson.RawMessage}}}}, bson.D{{"$sample", bson.D{{"size", 1}}}}})
 		if err != nil {
-			myUtil.ErrLog.Println(err)
+			myUtil.ErrLog.Println("查询获取精确学习回复时出现错误！\nerror:", err, "\ntext:", mjson.RawMessage)
 			return "记事本被楼下的🐱叼走了！w(ﾟДﾟ)w", err
 		}
 		aggregate.Next(context.TODO())
@@ -72,26 +72,30 @@ func Speak(mjson returnStruct.Message, isAccurate bool) (string, error) {
 			if err.Error() == "EOF" {
 				return "", nil
 			}
-			myUtil.ErrLog.Println(err)
+			myUtil.ErrLog.Println("解析精确学习回复时出现错误！\nerror:", err, "\ntext:", mjson.RawMessage)
 			return "记事本里的某条记录闪瞎了我的眼睛w(ﾟДﾟ)w", err
 		}
 		return elem.Resp, nil
 	} else {
 		cur, err := col.Find(context.TODO(), filter)
 		if err != nil {
-			myUtil.ErrLog.Println("Error searching for learnedResp:", err)
-			return "", err
+			myUtil.ErrLog.Println("查询获取模糊学习回复时出现错误！\nerror:", err, "\ntext:", mjson.RawMessage)
+			return "记事本被楼下的🐱叼走了！w(ﾟДﾟ)w", err
 		}
 		defer cur.Close(context.TODO())
 		for cur.Next(context.TODO()) {
 			var elem LearnedResp
 			err := cur.Decode(&elem)
 			if err != nil {
-				myUtil.ErrLog.Println(err)
+				myUtil.ErrLog.Println("解析模糊学习回复时出现错误！\nerror:", err, "\ntext:", mjson.RawMessage)
 				return "记事本里的某条记录闪瞎了我的眼睛w(ﾟДﾟ)w", err
 			}
 			if strings.Contains(mjson.RawMessage, elem.Text) {
-				return elem.Resp, nil
+				if config.Settings.LearnAndResponse.UseBase64 {
+					return myUtil.CQCode2Base64(elem.Resp), nil
+				} else {
+					return elem.Resp, nil
+				}
 			}
 		}
 	}
@@ -163,25 +167,6 @@ func ScanZombieResp(isAccurate bool) int {
 	return ret
 }
 
-//func CQCode2Base64(response string) (string, string) {
-//	compile := regexp.MustCompile("CQ:image[^\\]]+")
-//	index := compile.FindAllStringIndex(response, -1)
-//	for _, v := range index {
-//		pic := response[v[0]:v[1]]
-//		url := pic[strings.Index(pic, "url=")+4:]
-//		if url == "" {
-//			continue
-//		}
-//		str := myUtil.GetBase64CQCode(url)
-//		if str == "" {
-//			continue
-//		} else {
-//			response = response[:v[0]-1] + str + response[v[1]+1:]
-//		}
-//	}
-//	return response
-//}
-
 func StartExtendExpirationTimeLoop() {
 	for myUtil.PublicWs == nil {
 	}
@@ -216,30 +201,31 @@ func ExtendExpirationTime(ws *websocket.Conn, isAccurate bool) {
 	}
 }
 
-// AllCQCode2Base64 转换有风险，存储需谨慎。只能说，啊，都怪qq的图床要定期清理
+// StorePicOfResponse 转换有风险，存储需谨慎。只能说，啊，都怪qq的图床要定期清理
 // 暂时不进行相关调用，因为通过定期发送图片进行更新可以做到续期的效果（x
 // 错误的，定期发送费时还吵
-//func AllCQCode2Base64() int {
-//	ret := 0
-//	c := data.Db.Collection("base64Set")
-//	cur, err := c.Find(context.TODO(), bson.D{})
-//	if err != nil {
-//		myUtil.ErrLog.Println("Error when turn CQ code into base64:", err)
-//		return -1
-//	}
-//	defer cur.Close(context.TODO())
-//	for cur.Next(context.TODO()) {
-//		var elem LearnedResp
-//		err := cur.Decode(&elem)
-//		if err != nil {
-//			myUtil.ErrLog.Println(err)
-//			continue
-//		}
-//		_, err = c.UpdateOne(context.TODO(), bson.D{{"resp", elem.Resp}, {"text", elem.Text}}, bson.D{{"resp", CQCode2Base64(elem.Resp)}})
-//		if err != nil {
-//			return 0
-//		}
-//		ret++
-//	}
-//	return ret
-//}
+func StorePicOfResponse(isAccurate bool) int {
+	var c *mongo.Collection
+	ret := 0
+	if isAccurate {
+		c = data.Db.Collection("learnedRespAccurate")
+	} else {
+		c = data.Db.Collection("learnedResp")
+	}
+	cur, err := c.Find(context.TODO(), bson.D{})
+	if err != nil {
+		myUtil.ErrLog.Println("将回复全部转换为本地存储时出错:\n", err, "\nisAccurate", isAccurate)
+		return -1
+	}
+	defer cur.Close(context.TODO())
+	for cur.Next(context.TODO()) {
+		var elem LearnedResp
+		err := cur.Decode(&elem)
+		if err != nil {
+			myUtil.ErrLog.Println(err)
+			continue
+		}
+		ret += myUtil.LocalPicStorageUpdate(myUtil.StoreCQCode2Base64(elem.Resp))
+	}
+	return ret
+}

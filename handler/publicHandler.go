@@ -53,6 +53,10 @@ func getNetEaseMusicId(song string, random bool) (string, string, error) {
 		return "", "功能尚在开发中，敬请期待", nil
 	} else {
 		resp, err := http.Get("http://music.163.com/api/search/get/web?csrf_token=hlpretag=&hlposttag=&s=" + url.QueryEscape(song) + "&type=1&offset=0&total=true&limit=5")
+		if err != nil {
+			myUtil.ErrLog.Println("网络错误！未能连接到网易云音乐 error:", err)
+			return "网络好像出了点小问题~", "", err
+		}
 		defer resp.Body.Close() //在回复后必须关闭回复的主体
 		body, _ := ioutil.ReadAll(resp.Body)
 		var song NetEaseResp
@@ -60,7 +64,7 @@ func getNetEaseMusicId(song string, random bool) (string, string, error) {
 		var id string
 		var intro string
 		if song.Code != 200 {
-			println("获取音乐搜索结果错误！")
+			myUtil.ErrLog.Println("获取音乐搜索结果错误！\ncode:", song.Code, " body:", string(body))
 			return "网络好像出了点小问题~", "", nil
 		} else {
 			for _, i := range song.Result.Songs {
@@ -77,7 +81,7 @@ func getNetEaseMusicId(song string, random bool) (string, string, error) {
 				}
 			}
 		}
-		return "即将为您播放：\r\n" + intro, id, err
+		return "即将为您播放：\r\n" + intro, id, nil
 	}
 }
 func Music(mjson returnStruct.Message, ws *websocket.Conn) (string, error) {

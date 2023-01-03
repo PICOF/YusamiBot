@@ -29,17 +29,26 @@ type CardDesc struct {
 	Timestamp uint32 `json:"timestamp"`
 }
 
-type EmojiDetail struct {
-	Text string `json:"text"`
-	Url  string `json:"url"`
-}
-
-type EmojiInfo struct {
-	EmojiDetails []EmojiDetail `json:"emoji_details"`
-}
-
 type CardDisplay struct {
-	EmojiInfo EmojiInfo `json:"emoji_info"`
+	EmojiInfo struct {
+		EmojiDetails []struct {
+			Text string `json:"text"`
+			Url  string `json:"url"`
+		} `json:"emoji_details"`
+	} `json:"emoji_info"`
+	AddOnCardInfo []struct {
+		UgcAttachCard struct {
+			Type       string `json:"type"`
+			HeadText   string `json:"head_text"`
+			Title      string `json:"title"`
+			ImageUrl   string `json:"image_url"`
+			DescSecond string `json:"desc_second"`
+			PlayUrl    string `json:"play_url"`
+			Duration   string `json:"duration"`
+			MultiLine  bool   `json:"multi_line"`
+			OidStr     string `json:"oid_str"`
+		} `json:"ugc_attach_card"`
+	} `json:"add_on_card_info"`
 }
 
 type DynamicCard struct {
@@ -222,6 +231,9 @@ func (b *BiliUp) DynamicAnalysis(index int) string {
 	for _, v := range b.Dynamics[index].Display.EmojiInfo.EmojiDetails {
 		ret = strings.ReplaceAll(ret, v.Text, myUtil.GetBase64CQCode(v.Url+"@50w_50h.png"))
 	}
+	for _, v := range b.Dynamics[index].Display.AddOnCardInfo {
+		ret += "\n【视频卡片】：" + v.UgcAttachCard.Title + "\n" + myUtil.GetBase64CQCode(v.UgcAttachCard.ImageUrl) + "\n" + v.UgcAttachCard.DescSecond + "   " + v.UgcAttachCard.Duration + "\n【🔗】：" + v.UgcAttachCard.PlayUrl
+	}
 	return ret
 }
 func DynamicTranslate(DynamicType int, content string) string {
@@ -273,7 +285,10 @@ func DynamicTranslate(DynamicType int, content string) string {
 		ret = myUtil.GetBase64CQCode(dynamic.Cover) + "\n【音频】：" + dynamic.Title + "\n【分类】：" + dynamic.TypeInfo + "\n【链接】：" + "https://www.bilibili.com/audio/au" + strconv.FormatInt(dynamic.Id, 10)
 	case 4200:
 		ret = "▛" + dynamic.Title + "▟\n" + myUtil.GetBase64CQCode(dynamic.Cover) + "\n" + "◉ 开播时间\n" + dynamic.LiveTime + "\n" + "◉ 分区\n" + dynamic.ParentAreaName + " : " + dynamic.AreaName + "\n" + "◉ 标签\n" + dynamic.Tags + "\n" + "◉ 简介\n" + dynamic.Description + "\n" + "◉ 直通车\n" + dynamic.LiveUrl
-	//TODO 这部分只能说我也不清楚是什么动态类型，只能靠猜，感觉像是直播转发但是4200已经是验证过的直播转发类型了，这个与4200结构还不太一样，所以先打个注释，后面有机会再确认
+	/*
+		TODO 这部分只能说我也不清楚是什么动态类型，只能靠猜，感觉像是直播转发但是4200已经是验证过的直播转发类型了，这个与4200结构还不太一样，所以先打个注释，后面有机会再确认
+		确实也是直播类型，不知道出于什么原因一个直播有这么多类型返回结构体还不一样
+	*/
 	case 4308:
 		upName := strconv.FormatInt(dynamic.LivePlayInfo.Uid, 10)
 		upInfo, _ := GetUpInfoByUid(upName)

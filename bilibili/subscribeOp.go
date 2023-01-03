@@ -38,6 +38,8 @@ func SubscribeHandler(ws *websocket.Conn, mjson returnStruct.Message, m []string
 	switch m[1] {
 	case "关注":
 		return AddSubscribe(mjson.UserID, mjson.GroupID, m[2])
+	case "取关":
+		fallthrough
 	case "取消关注":
 		return DeleteSubscribe(mjson.UserID, mjson.GroupID, m[2])
 	case "动态":
@@ -169,6 +171,7 @@ func ScanSubscribe(ws *websocket.Conn) {
 			cur, err := c.Find(context.TODO(), filter)
 			if err != nil {
 				myUtil.ErrLog.Println("获取组群b站关注列表时出现错误,error:", err)
+				return
 			}
 			for cur.Next(context.TODO()) {
 				var elem subscribeList

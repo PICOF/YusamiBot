@@ -47,10 +47,15 @@ func privateHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, err
 				config.GetSetting()
 				return "刷新成功~", nil
 			case "清理僵尸回复":
-				myUtil.SendGroupMessage(ws, mjson.GroupID, "嘟嘟嘟~开始清理啦！")
+				myUtil.SendPrivateMessage(ws, mjson.UserID, "嘟嘟嘟~开始清理啦！")
 				num1 := learnResp.ScanZombieResp(true)
 				num2 := learnResp.ScanZombieResp(false)
 				return "共清理\n" + strconv.Itoa(num1) + "条僵尸化的精确回复\n" + strconv.Itoa(num2) + "条僵尸化的模糊回复", nil
+			case "存储回复图片":
+				myUtil.SendPrivateMessage(ws, mjson.UserID, "嘟嘟嘟~开始转存啦！")
+				num1 := learnResp.StorePicOfResponse(true)
+				num2 := learnResp.StorePicOfResponse(false)
+				return "共转储\n" + strconv.Itoa(num1) + "条来自精确回复的图片\n" + strconv.Itoa(num2) + "条来自模糊回复的图片", nil
 			}
 		}
 	}
