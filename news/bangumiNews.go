@@ -41,7 +41,7 @@ func BangumiNewsHandler(msg []string, mjson returnStruct.Message, ws *websocket.
 			if err != nil {
 				return "呜哇哇~失去与二次元之间的连接了！", err
 			}
-			err = myUtil.SendForwardMsg(res, mjson, ws)
+			err = myUtil.SendForwardMsg(res, mjson)
 			if err != nil {
 				myUtil.ErrLog.Println("发送bangumi今日时间表时出现错误,error:", err)
 				return config.Settings.BotName.Name + " 的电波被邪恶的大魔王拦截了！", err
@@ -55,7 +55,7 @@ func BangumiNewsHandler(msg []string, mjson returnStruct.Message, ws *websocket.
 	case "全部番剧":
 		if len(msg) == 2 {
 			res, err := bangumiOfOneWeek()
-			err = myUtil.SendForwardMsg(res, mjson, ws)
+			err = myUtil.SendForwardMsg(res, mjson)
 			if err != nil {
 				myUtil.ErrLog.Println("发送bangumi整周时间表时出现错误,error:", err)
 				return config.Settings.BotName.Name + " 的电波被邪恶的大魔王拦截了！", err
@@ -102,7 +102,7 @@ func findBangumi(target string, mjson returnStruct.Message, ws *websocket.Conn) 
 		myUtil.MsgLog.Println("cannot find bangumi")
 		return "未找到相关番剧呢，换个词再搜搜吧~", nil
 	}
-	err = myUtil.SendForwardMsg(msgs, mjson, ws)
+	err = myUtil.SendForwardMsg(msgs, mjson)
 	if err != nil {
 		myUtil.ErrLog.Println("发送bangumi今日时间表时出现错误,error:", err)
 		return config.Settings.BotName.Name + " 的电波被邪恶的大魔王拦截了！", err

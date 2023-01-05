@@ -234,7 +234,7 @@ func GetTag(mjson returnStruct.Message, ws *websocket.Conn, isGroup bool) (strin
 		return "", nil
 	}
 	if msg[:9] == "炼金术" || msg[len(msg)-9:] == "炼金术" {
-		err := myUtil.SendNotice(mjson, ws, "正在努力炼金nya！")
+		err := myUtil.SendNotice(mjson, "正在努力炼金nya！")
 		if err != nil {
 			myUtil.ErrLog.Println("在提取tag前返回预备信息时出现问题,error:", err)
 			return "咳咳咳！试管突然爆炸了！", err
@@ -245,7 +245,7 @@ func GetTag(mjson returnStruct.Message, ws *websocket.Conn, isGroup bool) (strin
 		}
 		return yusamiPaint.TagAnalyze(res, mjson.MessageID, isGroup, mjson.UserID)
 	} else if msg[:12] == "图片炼成" || msg[len(msg)-12:] == "图片炼成" {
-		err := myUtil.SendNotice(mjson, ws, "准备使用图片炼成术nya！")
+		err := myUtil.SendNotice(mjson, "准备使用图片炼成术nya！")
 		if err != nil {
 			myUtil.ErrLog.Println("在提取tag前返回预备信息时出现问题,error:", err)
 			return "咳咳咳！法阵突然爆炸了！", err

@@ -62,7 +62,7 @@ func MakeForwardMsgNode(msg interface{}) []returnStruct.Node {
 	}
 	return resSet
 }
-func SendForwardMsg(msg interface{}, mjson returnStruct.Message, ws *websocket.Conn) error {
+func SendForwardMsg(msg interface{}, mjson returnStruct.Message) error {
 	var fmsg returnStruct.SendMsg
 	if mjson.GroupID == 0 {
 		fmsg.Param.UserID = mjson.UserID
@@ -85,14 +85,14 @@ func SendForwardMsg(msg interface{}, mjson returnStruct.Message, ws *websocket.C
 		return err
 	}
 	WsLock.Lock()
-	err = ws.WriteMessage(returnStruct.MsgType, marshal)
+	err = PublicWs.WriteMessage(returnStruct.MsgType, marshal)
 	WsLock.Unlock()
 	if err != nil {
 		return err
 	}
 	return nil
 }
-func SendNotice(mjson returnStruct.Message, ws *websocket.Conn, msg string) error {
+func SendNotice(mjson returnStruct.Message, msg string) error {
 	v := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{Message: msg}}
 	if mjson.GroupID != 0 {
 		v.Param.GroupID = mjson.GroupID
@@ -101,25 +101,25 @@ func SendNotice(mjson returnStruct.Message, ws *websocket.Conn, msg string) erro
 	}
 	o, _ := json.Marshal(v)
 	WsLock.Lock()
-	err := ws.WriteMessage(returnStruct.MsgType, o)
+	err := PublicWs.WriteMessage(returnStruct.MsgType, o)
 	WsLock.Unlock()
 	return err
 }
-func SendPrivateMessage(ws *websocket.Conn, uid int64, msg string) {
+func SendPrivateMessage(uid int64, msg string) {
 	v := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{Message: msg, UserID: uid}}
 	o, _ := json.Marshal(v)
 	WsLock.Lock()
-	err := ws.WriteMessage(returnStruct.MsgType, o)
+	err := PublicWs.WriteMessage(returnStruct.MsgType, o)
 	WsLock.Unlock()
 	if err != nil {
 		ErrLog.Println("在发送私聊消息时出现错误！\nerror:", err, "\nmessage:", msg)
 	}
 }
-func SendGroupMessage(ws *websocket.Conn, groupId int64, msg string) {
+func SendGroupMessage(groupId int64, msg string) {
 	v := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{Message: msg, GroupID: groupId}}
 	o, _ := json.Marshal(v)
 	WsLock.Lock()
-	err := ws.WriteMessage(returnStruct.MsgType, o)
+	err := PublicWs.WriteMessage(returnStruct.MsgType, o)
 	WsLock.Unlock()
 	if err != nil {
 		ErrLog.Println("在发送群聊消息时出现错误！\nerror:", err, "\nmessage:", msg)
@@ -236,6 +236,16 @@ func DeleteLocalPicStorage(md5 string) bool {
 	}
 }
 
+func ForgetLocalPicInCQCode(resp string) {
+	count := 0
+	for _, v := range GetMd5OfPic(resp) {
+		if DeleteLocalPicStorage(v) {
+			count++
+		}
+	}
+	MsgLog.Println("本地图片删除", count, "条记录")
+}
+
 func GetLocalPicStorage(md5 string) string {
 	var ret LocalPic
 	c := data.Db.Collection("localPicStorage")
@@ -267,6 +277,7 @@ func LocalPicStorageUpdate(pic map[string]string) int {
 		}
 		count++
 	}
+	MsgLog.Println("成功转储", count, "张图片")
 	return count
 }
 

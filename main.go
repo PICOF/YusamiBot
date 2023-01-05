@@ -45,9 +45,7 @@ func main() {
 	go myUtil.RenewLoggers()
 	aiTalk.GetCharacterList()
 	go bilibili.StartSubscribeScanner()
-	if config.Settings.LearnAndResponse.RenewSwitch {
-		go learnResp.StartExtendExpirationTimeLoop()
-	}
+	go learnResp.StartExtendExpirationTimeLoop()
 	gin.DefaultWriter = io.MultiWriter(os.Stdout)
 	g := gin.Default()
 	g.LoadHTMLGlob("diary/template/*")

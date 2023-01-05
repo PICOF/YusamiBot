@@ -108,7 +108,7 @@ func findComic(query string, ws *websocket.Conn, mjson returnStruct.Message) (st
 		//"[CQ:image,file="+v.Img+",subType=0]"+"\ntitle:"+v.Title+"\n车牌号"+v.Id+"\ntags:"+strings.Join(v.Tags, " ")
 		comics = append(comics, "[CQ:image,file="+v.Img+",subType=0]"+"\ntitle:"+v.Title+"\n车牌号"+v.Id)
 	}
-	err = myUtil.SendForwardMsg(comics, mjson, ws)
+	err = myUtil.SendForwardMsg(comics, mjson)
 	if err != nil {
 		return config.Settings.BotName.Name + "的消息被截胡了！", err
 	}
@@ -144,7 +144,7 @@ func getComic(id string, ws *websocket.Conn, mjson returnStruct.Message) (string
 	if img == nil {
 		return "我图图呢！", errors.New("failed to get image")
 	}
-	err := myUtil.SendForwardMsg(packMsg(img), mjson, ws)
+	err := myUtil.SendForwardMsg(packMsg(img), mjson)
 	if err != nil {
 		return config.Settings.BotName.Name + "的图图被截胡了！", err
 	}

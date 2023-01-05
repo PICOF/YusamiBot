@@ -58,7 +58,7 @@ func WatchBangumi(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 		searchQueue.Unlock()
 		return "当前搜索队列已满哦~请耐心等待~", nil
 	}
-	err := myUtil.SendNotice(mjson, ws, "正在努力寻找中……")
+	err := myUtil.SendNotice(mjson, "正在努力寻找中……")
 	if err != nil {
 		myUtil.ErrLog.Println("动漫搜索返回结果时出现错误,error:", err)
 	}
@@ -105,7 +105,7 @@ func WatchBangumi(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 	if len(msg) == 0 {
 		return "可恶！这被地球束缚的信号！", nil
 	}
-	err = myUtil.SendForwardMsg(msg, mjson, ws)
+	err = myUtil.SendForwardMsg(msg, mjson)
 	if err != nil {
 		myUtil.ErrLog.Println("发送各大动漫网站搜索结果时出现错误,error:", err)
 		return "可恶！这被地球束缚的信号！", err

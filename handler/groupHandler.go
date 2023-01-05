@@ -83,16 +83,18 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 		if len(m) > 10 && m[1:9] == "CQ:reply" {
 			if ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, mjson.UserID); ok {
 				if ok, index := myUtil.IsInArray(ml, "模糊学习"); ok && index < len(ml)-1 {
-					res, err = learnResp.LearnResp(mjson, false)
+					learnResp.LearnResp(mjson, false)
+					return "", nil
 				} else if ok, index = myUtil.IsInArray(ml, "忘记"); ok && index < len(ml)-1 {
 					res, err = learnResp.Forget(mjson)
-				}
-				if res != "" {
-					return res, err
+					if res != "" {
+						return res, err
+					}
 				}
 			}
 			if ok, index := myUtil.IsInArray(ml, "学习"); ok && index < len(ml)-1 {
-				res, err = learnResp.LearnResp(mjson, true)
+				learnResp.LearnResp(mjson, true)
+				return "", nil
 			}
 			if res != "" {
 				return res, err
@@ -158,7 +160,7 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 		}
 	}
 	if config.Settings.Setu.SetuGroupSender {
-		res, err = setu.GetSetu(ws, mjson)
+		res, err = setu.GetSetu(mjson)
 		if res == "over" {
 			return "", err
 		}

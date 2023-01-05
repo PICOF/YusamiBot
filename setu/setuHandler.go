@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/dlclark/regexp2"
-	"github.com/gorilla/websocket"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -42,23 +41,19 @@ func isR18(str string) (string, int) {
 	}
 	return str, res
 }
-func GetSetu(ws *websocket.Conn, mjson returnStruct.Message) (string, error) {
+func GetSetu(mjson returnStruct.Message) (string, error) {
 	var res string
 	var err error
 	var num int
 	var tag []string
 	str := translate(mjson.RawMessage)
-	compile := regexp2.MustCompile("(?<=给[0-9]*张|来[0-9]*张|来点|给点|我要[0-9]*张).+(?=涩图|色图|🐍图)", 0)
+	compile := regexp2.MustCompile("(?<=给[0-9]*张|来[0-9]*张|来点|给点|我要[0-9]*张).*(?=涩图|色图|🐍图)", 0)
 	matched, _ := compile.FindStringMatch(str)
 	if matched == nil {
 		return "", err
 	}
 	pure, r18 := isR18(matched.String())
-	if pure == "随机" {
-		tag = []string{}
-	} else {
-		tag = strings.Split(pure, "、")
-	}
+	tag = strings.Split(pure, "、")
 	compile = regexp2.MustCompile("[0-9]+(?=张)", 0)
 	matched, _ = compile.FindStringMatch(str)
 	if matched == nil {
@@ -70,7 +65,7 @@ func GetSetu(ws *websocket.Conn, mjson returnStruct.Message) (string, error) {
 			return "请仔细检查输入哦", err
 		}
 	}
-	res, err = loliconApi(tag, num, r18, ws, mjson)
+	res, err = loliconApi(tag, num, r18, mjson)
 	if err != nil {
 		myUtil.ErrLog.Println("使用loliconApi时出现问题：", err)
 		return "wifi信号丢失力！", err
@@ -108,7 +103,7 @@ type lolicon struct {
 	Num   int      `json:"num"`
 }
 
-func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson returnStruct.Message) (string, error) {
+func loliconApi(tag []string, num int, r18 int, mjson returnStruct.Message) (string, error) {
 	var level string
 	if r18 == 1 {
 		level = "5-6"
@@ -125,21 +120,11 @@ func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson return
 		myUtil.ErrLog.Println("序列化涩图请求时出现问题啦：json.Marshal error:", err)
 		return "请检查参数输入是否有误哦~", err
 	}
-	v := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{}}
-	if mjson.GroupID == 0 {
-		v.Param.UserID = mjson.UserID
-	} else {
-		v.Param.GroupID = mjson.GroupID
-	}
-	v.Param.Message = "正在努力搬运中~"
-	marshal, err := json.Marshal(v)
+	err = myUtil.SendNotice(mjson, "正在努力搬运中~")
 	if err != nil {
 		myUtil.ErrLog.Println("发送涩图通知时出现异常：", err)
 		return "今天还是歇歇养生一下吧~", err
 	}
-	myUtil.WsLock.Lock()
-	err = ws.WriteMessage(returnStruct.MsgType, marshal)
-	myUtil.WsLock.Unlock()
 	resp, err := http.Post(config.Settings.Setu.Api, "application/json", bytes.NewBuffer(ret))
 	if err != nil {
 		myUtil.ErrLog.Println("获取涩图地址时出现错误：Error:", err)
@@ -158,19 +143,17 @@ func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson return
 		return "啊咧，是不是你的xp太冷门了~", nil
 	}
 	myUtil.MsgLog.Println("即将发送", len(se.Data), "张涩图")
+	var message string
 	if len(se.Data) == 1 {
 		var pic string
 		e := se.Data[0]
 		pic, err = GetPic(e.Urls.Original, e.R18)
-		v.Param.Message = pic + "\n作者：" + e.Author + "\n标题：" + e.Title + "\npid：" + strconv.FormatInt(e.PID, 10) + "\n是否NSFW：" + strconv.FormatBool(e.R18)
-		marshal, err = json.Marshal(v)
+		message = pic + "\n作者：" + e.Author + "\n标题：" + e.Title + "\npid：" + strconv.FormatInt(e.PID, 10) + "\n是否NSFW：" + strconv.FormatBool(e.R18)
+		err = myUtil.SendNotice(mjson, message)
 		if err != nil {
 			myUtil.ErrLog.Println("发送涩图时出现异常：", err)
 			return "我图图呢？", err
 		}
-		myUtil.WsLock.Lock()
-		err = ws.WriteMessage(returnStruct.MsgType, marshal)
-		myUtil.WsLock.Unlock()
 	} else {
 		var data []string
 		for _, e := range se.Data {
@@ -183,9 +166,19 @@ func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson return
 				myUtil.ErrLog.Println("加载涩图图源时出现错误：Error:", err)
 				return "我图图呢？", err
 			}
-			data = append(data, pic+"\n作者："+e.Author+"\n标题："+e.Title+"\npid："+strconv.FormatInt(e.PID, 10)+"\nNSFW："+strconv.FormatBool(e.R18))
+			message = pic + "\n作者：" + e.Author + "\n标题：" + e.Title + "\npid：" + strconv.FormatInt(e.PID, 10) + "\nNSFW：" + strconv.FormatBool(e.R18)
+			if mjson.GroupID == 0 {
+				err = myUtil.SendNotice(mjson, message)
+				if err != nil {
+					myUtil.ErrLog.Println("发送涩图时出现异常：", err)
+				}
+			} else {
+				data = append(data, message)
+			}
 		}
-		err = myUtil.SendForwardMsg(data, mjson, ws)
+		if mjson.GroupID != 0 {
+			err = myUtil.SendForwardMsg(data, mjson)
+		}
 	}
 	if err != nil {
 		myUtil.ErrLog.Println("传输涩图时出现错误：", err)
@@ -195,34 +188,39 @@ func loliconApi(tag []string, num int, r18 int, ws *websocket.Conn, mjson return
 }
 
 func GetPic(website string, nsfw bool) (string, error) {
-	get, err := http.Get(website)
-	if err != nil {
-		myUtil.ErrLog.Println("请求涩图网站时出现异常！error:", err)
-		return "我的小黄书呢QAQ", err
-	}
-	defer get.Body.Close()
-	content, err := ioutil.ReadAll(get.Body)
+	var fileRoute, qrCode string
+	var mode int
 	if nsfw {
-		filename := website[strings.LastIndex(website, "/")+1:]
-		err = ioutil.WriteFile("pixiv/h/"+filename, content, 0666)
-		if err != nil {
-			myUtil.ErrLog.Println("保存pixiv🐍图时出现异常！error:", err)
-		}
-		res, err := myUtil.SeseQrcode("something/review", filename)
-		if err != nil {
-			return "不给看！", err
-		}
-		return "[CQ:image,file=base64://" + res + "]", nil
+		fileRoute = "pixiv/h/"
+		qrCode = "something/review"
+		mode = config.Settings.Setu.PicMode % 10
 	} else {
+		fileRoute = "pixiv/safe/"
+		qrCode = "something/plan"
+		mode = config.Settings.Setu.PicMode / 10
+	}
+	switch mode {
+	case 1:
+		get, err := http.Get(website)
+		if err != nil {
+			myUtil.ErrLog.Println("请求涩图网站时出现异常！error:", err)
+			return "我的小黄书呢QAQ", err
+		}
+		defer get.Body.Close()
+		content, err := ioutil.ReadAll(get.Body)
 		filename := website[strings.LastIndex(website, "/")+1:]
-		err = ioutil.WriteFile("pixiv/safe/"+filename, content, 0666)
+		err = ioutil.WriteFile(fileRoute+filename, content, 0666)
 		if err != nil {
 			myUtil.ErrLog.Println("保存pixiv🐍图时出现异常！error:", err)
 		}
-		res, err := myUtil.SeseQrcode("something/plan", filename)
+		res, err := myUtil.SeseQrcode(qrCode, filename)
 		if err != nil {
 			return "不给看！", err
 		}
 		return "[CQ:image,file=base64://" + res + "]", nil
+	case 2:
+		return "[CQ:image,file=" + website + "]", nil
+	default:
+		return "[CQ:image,file=" + website + "]", nil
 	}
 }

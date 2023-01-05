@@ -1,6 +1,7 @@
 package bilibili
 
 import (
+	"Lealra/config"
 	"Lealra/data"
 	"Lealra/myUtil"
 	"Lealra/returnStruct"
@@ -11,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -81,8 +83,14 @@ func StartSubscribeScanner() {
 	for myUtil.PublicWs == nil {
 	}
 	for {
-		go ScanSubscribe(myUtil.PublicWs)
-		time.Sleep(30 * time.Second)
+		if config.Settings.Bilibili.Status {
+			myUtil.MsgLog.Println("b 站助手功能已开启！")
+		}
+		for config.Settings.Bilibili.Status {
+			ScanSubscribe(myUtil.PublicWs)
+		}
+		myUtil.MsgLog.Println("b 站助手功能已关闭！")
+		<-config.BilibiliStatusChan
 	}
 }
 func LiveRoomInfoFormat(msg string, b BiliUp, showCover bool) string {
@@ -126,7 +134,7 @@ func ScanPersonalSubscribe(ws *websocket.Conn, sendMap map[int64][]int64, subscr
 							for _, v := range uList {
 								msg = "[CQ:at,qq=" + strconv.FormatInt(v, 10) + "] " + msg
 							}
-							myUtil.SendGroupMessage(ws, gid, msg)
+							myUtil.SendGroupMessage(gid, msg)
 						}(uList, gid, msg)
 					}
 				}
@@ -149,7 +157,7 @@ func ScanPersonalSubscribe(ws *websocket.Conn, sendMap map[int64][]int64, subscr
 						for _, v := range uList {
 							msg = "[CQ:at,qq=" + strconv.FormatInt(v, 10) + "] " + msg
 						}
-						myUtil.SendGroupMessage(ws, gid, msg)
+						myUtil.SendGroupMessage(gid, msg)
 					}(uList, gid, msg)
 				}
 			}
@@ -187,6 +195,7 @@ func ScanSubscribe(ws *websocket.Conn) {
 			}
 			ScanPersonalSubscribe(ws, sendMap, subscribe)
 		}(v.(string))
+		time.Sleep(time.Millisecond * time.Duration(int(((rand.Float32()*config.Settings.Bilibili.Interval)+0.5)*1000)))
 	}
 }
 func DeleteZombieSubscribe(subscribe string, gid int64) {
@@ -273,7 +282,7 @@ func LookDynamics(mjson returnStruct.Message, ws *websocket.Conn, match string) 
 			for i := 0; i < len(v.(*BiliUp).Dynamics); i++ {
 				msg = append(msg, v.(*BiliUp).DynamicAnalysis(i))
 			}
-			myUtil.SendForwardMsg(msg, mjson, ws)
+			myUtil.SendForwardMsg(msg, mjson)
 		}()
 		return "正在努力搬运 up 主" + v.(*BiliUp).Info.Data.InfoCard.Name + "的动态~", nil
 	} else {
@@ -379,9 +388,9 @@ func getAllLiveByGid(mjson returnStruct.Message, ws *websocket.Conn) string {
 			}
 		}
 		if len(msg) == 0 {
-			myUtil.SendGroupMessage(ws, mjson.GroupID, "没有正在直播中的 up！")
+			myUtil.SendGroupMessage(mjson.GroupID, "没有正在直播中的 up！")
 		} else {
-			myUtil.SendForwardMsg(LiveInfoSplit(msg), mjson, ws)
+			myUtil.SendForwardMsg(LiveInfoSplit(msg), mjson)
 		}
 	}()
 	return "正在获取相关直播信息~"
@@ -401,9 +410,9 @@ func getAllLiveByUid(mjson returnStruct.Message, ws *websocket.Conn) string {
 			}
 		}
 		if len(msg) == 0 {
-			myUtil.SendGroupMessage(ws, mjson.GroupID, "没有正在直播中的 up！")
+			myUtil.SendGroupMessage(mjson.GroupID, "没有正在直播中的 up！")
 		} else {
-			myUtil.SendForwardMsg(LiveInfoSplit(msg), mjson, ws)
+			myUtil.SendForwardMsg(LiveInfoSplit(msg), mjson)
 		}
 	}()
 	return "正在获取相关直播信息~"

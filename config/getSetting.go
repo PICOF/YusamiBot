@@ -57,6 +57,11 @@ type AntiCf struct {
 	Proxy     string `yaml:"proxy"`
 }
 
+type Bilibili struct {
+	Status   bool    `yaml:"status"`
+	Interval float32 `yaml:"interval"`
+}
+
 type Setting struct {
 	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
 	DataSource       DataSource       `yaml:"dataSource"`
@@ -70,6 +75,7 @@ type Setting struct {
 	Bangumi          BangumiSettings  `yaml:"bangumi"`
 	OpenAi           OpenAi           `yaml:"openAi"`
 	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
+	Bilibili         Bilibili         `yaml:"bilibili"`
 	AntiCf           AntiCf           `yaml:"antiCf"`
 	Proxy            Proxy            `yaml:"proxy"`
 }
@@ -117,9 +123,12 @@ type Logs struct {
 type Setu struct {
 	SetuGroupSender bool   `yaml:"setuGroupSender"`
 	Api             string `yaml:"api"`
+	PicMode         int    `yaml:"picMode"`
 }
 
 var Settings = &Setting{}
+var BilibiliStatusChan = make(chan bool)
+var PicRenewChan = make(chan bool)
 
 func GetSetting() {
 	file, err := ioutil.ReadFile("./config.yaml")
@@ -127,4 +136,16 @@ func GetSetting() {
 		fmt.Println("Error reading config file: ", err)
 	}
 	yaml.Unmarshal(file, &Settings)
+	if Settings.Bilibili.Status {
+		select {
+		case BilibiliStatusChan <- true:
+		default:
+		}
+	}
+	if Settings.LearnAndResponse.RenewSwitch {
+		select {
+		case PicRenewChan <- true:
+		default:
+		}
+	}
 }

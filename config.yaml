@@ -36,6 +36,7 @@ bangumi:
   bangumiSearch: true # 是否开启相关功能
   maxPoolSize: 3 # 同一时间的最大搜索数，所有组群共用
 setu:
+  picMode: 11 # 图片发送的形式，1为转换为二维码访问，2为原图访问,默认直接发送，十位对应非 nsfw 图，个位对应 nsfw 图
   setuGroupSender: true # 是否能群发，现在改了显示方式已经没有多少被封杀的可能了
   api: https://api.lolicon.app/setu/v2 # https://lolisuki.cc/api/setu/v1
 openAi:
@@ -57,6 +58,9 @@ learnAndResponse:
   groupToRenew: 608203511 # 用于续期的群，最好私人群，太吵了
   msgInterval: 2 # 消息间隔，单位s,过短容易出事
   useBase64: true # 空间够用的话强烈建议打开
+bilibili:
+  status: true # 是否开启，true 开启 false 关闭
+  interval: 1 # 单位 s，扫描爬取每个 up 的时间间隔，会上下浮动 0.5 秒
 antiCf: # 针对相关反爬的设定
   ja3: "771,4865-4867-4866-49195-49199-52393-52392-49196-49200-49162-49161-49171-49172-51-57-47-53-10,0-23-65281-10-11-35-16-5-51-43-13-45-28-21,29-23-24-25-256-257,0"
   userAgent: "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:87.0) Gecko/20100101 Firefox/87.0"

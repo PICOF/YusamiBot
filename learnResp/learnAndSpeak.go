@@ -6,7 +6,6 @@ import (
 	"Lealra/myUtil"
 	"Lealra/returnStruct"
 	"context"
-	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
@@ -21,13 +20,17 @@ type LearnedResp struct {
 	Text string `bson:"text"`
 }
 
-func LearnResp(mjson returnStruct.Message, isAccurate bool) (string, error) {
+func LearnResp(mjson returnStruct.Message, isAccurate bool) {
 	msg, err := returnStruct.GetReplyMsg(mjson)
 	if err != nil {
-		return "emo了,现在人家不想学习！", err
+		myUtil.SendGroupMessage(mjson.GroupID, "emo了,现在人家不想学习！")
+		myUtil.ErrLog.Println("获取回复消息内容时出现问题!\nerror:", err, "\nmessage:", mjson.RawMessage)
+		return
 	}
 	if len(msg.RetData.Message) == 0 {
-		return "没有获取到要学习的信息呢……", nil
+		myUtil.SendGroupMessage(mjson.GroupID, "没有获取到要学习的信息呢……")
+		myUtil.ErrLog.Println("获取消息为空，请检查 go-cqhttp 相关消息记录 time:", time.Now().Format("2006-01-02 15:04:05"))
+		return
 	}
 	var col *mongo.Collection
 	if isAccurate {
@@ -40,15 +43,18 @@ func LearnResp(mjson returnStruct.Message, isAccurate bool) (string, error) {
 	_, err = col.InsertOne(context.TODO(), filter)
 	if err != nil {
 		if strings.Contains(err.Error(), "E11000") {
-			return "这是多余的学习的说！", err
+			myUtil.SendGroupMessage(mjson.GroupID, "这是多余的学习的说！")
+			myUtil.ErrLog.Println("重复学习相同内容，response:" + resp)
+			return
 		} else {
 			myUtil.ErrLog.Println("学习新回复"+mjson.RawMessage+"-->"+msg.RawMessage+"时出错：", err)
 		}
 	}
+	myUtil.SendGroupMessage(mjson.GroupID, "学习成功！")
 	if config.Settings.LearnAndResponse.UseBase64 {
 		myUtil.LocalPicStorageUpdate(myUtil.StoreCQCode2Base64(resp))
 	}
-	return "学习成功！", err
+	return
 }
 func Speak(mjson returnStruct.Message, isAccurate bool) (string, error) {
 	var filter bson.D
@@ -171,13 +177,20 @@ func StartExtendExpirationTimeLoop() {
 	for myUtil.PublicWs == nil {
 	}
 	for {
-		ExtendExpirationTime(myUtil.PublicWs, true)
-		ExtendExpirationTime(myUtil.PublicWs, false)
-		time.Sleep(time.Hour * 48)
+		if config.Settings.LearnAndResponse.RenewSwitch {
+			myUtil.MsgLog.Println("图片转发备份功能已开启！")
+		}
+		for config.Settings.LearnAndResponse.RenewSwitch {
+			ExtendExpirationTime(true)
+			ExtendExpirationTime(false)
+			time.Sleep(time.Hour * 48)
+		}
+		myUtil.MsgLog.Println("图片转发备份功能已关闭！")
+		<-config.PicRenewChan
 	}
 }
 
-func ExtendExpirationTime(ws *websocket.Conn, isAccurate bool) {
+func ExtendExpirationTime(isAccurate bool) {
 	var cName string
 	if isAccurate {
 		cName = "learnedRespAccurate"
@@ -196,7 +209,7 @@ func ExtendExpirationTime(ws *websocket.Conn, isAccurate bool) {
 		if err != nil {
 			myUtil.ErrLog.Println(err, "\ntext:", elem.Text, " response:", elem.Resp, " isAccurate:", isAccurate)
 		}
-		myUtil.SendGroupMessage(ws, config.Settings.LearnAndResponse.GroupToRenew, elem.Resp)
+		myUtil.SendGroupMessage(config.Settings.LearnAndResponse.GroupToRenew, elem.Resp)
 		time.Sleep(time.Second * time.Duration(config.Settings.LearnAndResponse.MsgInterval))
 	}
 }
