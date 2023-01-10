@@ -100,7 +100,7 @@ func privateHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, err
 			}
 		}
 		if ml[0] == "网易云" {
-			res, err = Music(mjson, ws)
+			res, err = Music(mjson)
 			if res != "" {
 				return res, err
 			}

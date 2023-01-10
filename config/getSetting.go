@@ -62,6 +62,10 @@ type Bilibili struct {
 	Interval float32 `yaml:"interval"`
 }
 
+type Music struct {
+	Card bool `yaml:"card"`
+}
+
 type Setting struct {
 	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
 	DataSource       DataSource       `yaml:"dataSource"`
@@ -76,6 +80,7 @@ type Setting struct {
 	OpenAi           OpenAi           `yaml:"openAi"`
 	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
 	Bilibili         Bilibili         `yaml:"bilibili"`
+	Music            Music            `yaml:"music"`
 	AntiCf           AntiCf           `yaml:"antiCf"`
 	Proxy            Proxy            `yaml:"proxy"`
 }

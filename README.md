@@ -25,7 +25,7 @@
 ## 安装：
 首先下载最新的 release 文件，将其解压到文件夹中
 
-本项目使用 websocket 连接至 go-cqhttp，因此将 go-cqhttp 的 config 文件中的相关配置项改成如下样式:
+本项目使用 websocket 以及 http 连接至 go-cqhttp，因此将 go-cqhttp 的 config 文件中的相关配置项改成如下样式，并且在初始化 go-cqhttp 时也请将 http 和反向 ws 两种通信方式打开哦~:
 
 ```yaml
   # 反向WS设置

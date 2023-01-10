@@ -41,73 +41,77 @@ type Song struct {
 }
 
 type Album struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Cover string
 }
 
 type ArtistElement struct {
 	Name string `json:"name"`
 }
 
-func getNetEaseMusicId(song string, random bool) (string, string, error) {
+func getNetEaseMusic(song string, random bool) (*Song, string, error) {
 	if random {
-		return "", "功能尚在开发中，敬请期待", nil
+		return nil, "功能尚在开发中，敬请期待", nil
 	} else {
 		resp, err := http.Get("http://music.163.com/api/search/get/web?csrf_token=hlpretag=&hlposttag=&s=" + url.QueryEscape(song) + "&type=1&offset=0&total=true&limit=5")
 		if err != nil {
 			myUtil.ErrLog.Println("网络错误！未能连接到网易云音乐 error:", err)
-			return "网络好像出了点小问题~", "", err
+			return nil, "网络好像出了点小问题~", err
 		}
 		defer resp.Body.Close() //在回复后必须关闭回复的主体
 		body, _ := ioutil.ReadAll(resp.Body)
 		var song NetEaseResp
 		json.Unmarshal(body, &song)
-		var id string
-		var intro string
 		if song.Code != 200 {
 			myUtil.ErrLog.Println("获取音乐搜索结果错误！\ncode:", song.Code, " body:", string(body))
-			return "网络好像出了点小问题~", "", nil
+			return nil, "网络好像出了点小问题~", nil
 		} else {
 			for _, i := range song.Result.Songs {
 				if i.Fee == 1 {
 					continue
 				} else {
-					id = strconv.FormatInt(i.ID, 10)
-					for _, j := range i.Artists {
-						intro += j.Name + ","
-					}
-					intro = intro[:len(intro)-1] + " 的 "
-					intro += i.Name + "\r\n来自专辑：\r\n《" + i.Album.Name + "》"
-					break
+					return &i, "", nil
 				}
 			}
 		}
-		return "即将为您播放：\r\n" + intro, id, nil
+		return nil, "未找到相关曲目，换个关键词再搜搜吧~", nil
 	}
 }
-func Music(mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
+func SongFormat(song Song) (notice string, msg string) {
+	var intro string
+	var artists string
+	link := "http://music.163.com/song/media/outer/url?id=" + strconv.FormatInt(song.ID, 10) + ".mp3"
+	if config.Settings.Music.Card {
+		msg = "[CQ:music,type=163,id=" + strconv.FormatInt(song.ID, 10) + "]"
+	} else {
+		for _, j := range song.Artists {
+			artists += "," + j.Name
+		}
+		artists = artists[1:]
+		intro += "即将为您播放：\r\n"
+		intro += artists
+		intro = intro + " 的 "
+		msg = "[CQ:record,file=" + link + "]"
+	}
+	intro += song.Name + "\r\n来自专辑：\r\n《" + song.Album.Name + "》"
+	return intro, msg
+}
+func Music(mjson returnStruct.Message) (string, error) {
 	m := strings.Fields(mjson.RawMessage)
 	if m[1] == "help" {
 		return "使用[网易云]+空格+[歌名]进行搜索，部分收费曲目可能无法播放", nil
 	} else {
 		if string([]rune(mjson.RawMessage)[4:]) == "随便听听" {
-			_, res, err := getNetEaseMusicId("", true)
+			_, res, err := getNetEaseMusic("", true)
 			return res, err
 		} else {
-			notice, res, err := getNetEaseMusicId(string([]rune(mjson.RawMessage)[4:]), false)
+			song, res, err := getNetEaseMusic(string([]rune(mjson.RawMessage)[4:]), false)
 			if res != "" {
-				v := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{Message: notice}}
-				if mjson.GroupID != 0 {
-					v.Param.GroupID = mjson.GroupID
-				} else {
-					v.Param.UserID = mjson.UserID
-				}
-				o, _ := json.Marshal(v)
-				myUtil.WsLock.Lock()
-				ws.WriteMessage(returnStruct.MsgType, o)
-				myUtil.WsLock.Unlock()
-				return "[CQ:record,file=http://music.163.com/song/media/outer/url?id=" + res + ".mp3]", err
+				return res, err
 			} else {
-				return "未找到相关曲目，换个关键词再搜搜吧~", err
+				notice, msg := SongFormat(*song)
+				myUtil.SendNotice(mjson, notice)
+				return msg, err
 			}
 		}
 	}
