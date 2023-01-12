@@ -28,6 +28,8 @@ func cleanLogs() {
 	cleanMsgLogs()
 	cleanErrLogs()
 }
+
+// FIXME: 日志删除出现问题，由于未判断上下午的区别，所以导致两个文件一起删除了
 func cleanMsgLogs() {
 	date := time.Now().Add(-config.Settings.Logs.MsgLogsRefreshCycle * time.Hour).Format("2006-01-02T3")
 	root := "./log/diaryofyusami"

@@ -33,7 +33,7 @@ type subscribeList struct {
 func SubscribeHandler(ws *websocket.Conn, mjson returnStruct.Message, m []string) (string, error) {
 	if m[0] != "b站" {
 		return "", nil
-	} else if !groupSwitch[mjson.GroupID] && m[1] != "开启" {
+	} else if config.Settings.Bilibili.Status && !groupSwitch[mjson.GroupID] && m[1] != "开启" {
 		return "还没有开启相关功能哦！", nil
 	}
 	m = append(m, "1")

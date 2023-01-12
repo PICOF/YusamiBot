@@ -48,6 +48,7 @@ type LearnAndResponse struct {
 	GroupToRenew int64 `yaml:"groupToRenew"`
 	MsgInterval  int64 `yaml:"msgInterval"`
 	UseBase64    bool  `yaml:"useBase64"`
+	Compress     bool  `yaml:"compress"`
 }
 
 type AntiCf struct {
@@ -66,6 +67,11 @@ type Music struct {
 	Card bool `yaml:"card"`
 }
 
+type CharacterAi struct {
+	Token   string `yaml:"token"`
+	Timeout int    `yaml:"timeout"`
+}
+
 type Setting struct {
 	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
 	DataSource       DataSource       `yaml:"dataSource"`
@@ -78,6 +84,7 @@ type Setting struct {
 	BotName          BotName          `yaml:"botName"`
 	Bangumi          BangumiSettings  `yaml:"bangumi"`
 	OpenAi           OpenAi           `yaml:"openAi"`
+	CharacterAi      CharacterAi      `yaml:"characterAi"`
 	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
 	Bilibili         Bilibili         `yaml:"bilibili"`
 	Music            Music            `yaml:"music"`

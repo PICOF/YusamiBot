@@ -57,11 +57,15 @@ const letters = "123567890abcdef"
 func (aiChat *AiChat) SetBot(BotId string) (bool, error) {
 	//给什么是什么
 	aiChat.BotId = BotId
-	aiChat.getLazyUuid()
 	aiChat.initClient()
-	token, err := aiChat.getToken()
-	if err != nil {
-		return token, err
+	if config.Settings.CharacterAi.Token == "" {
+		aiChat.getLazyUuid()
+		token, err := aiChat.getToken()
+		if err != nil {
+			return token, err
+		}
+	} else {
+		aiChat.ClientOptions.Headers["authorization"] = "Token " + config.Settings.CharacterAi.Token
 	}
 	conversation, err := aiChat.createConversation()
 	if err != nil {
@@ -150,21 +154,10 @@ func (aiChat *AiChat) createConversation() (bool, error) {
 	}
 	return true, nil
 }
-func (aiChat *AiChat) Renew() (bool, error) {
-	aiChat.getLazyUuid()
-	ok, err := aiChat.getToken()
-	if err != nil {
-		return false, err
-	}
-	return ok, nil
-}
+
 func (aiChat *AiChat) SendMag(msg string) (bool, string, error) {
 	//貌似非注册用户只有七次聊天机会，但是嘛……好像history填对了也可以无限续杯
-	if aiChat.Count == 7 {
-		aiChat.Renew()
-		aiChat.Count = 0
-	}
-	aiChat.Count++
+	//现在是续不了咯~
 	var tgt string
 	for _, v := range aiChat.CreatedInfo.Participants {
 		if !v.IsHuman {
@@ -191,19 +184,21 @@ func (aiChat *AiChat) SendMag(msg string) (bool, string, error) {
 	var reply Reply
 	err = json.Unmarshal([]byte(text), &reply)
 	if err != nil {
+		myUtil.ErrLog.Println()
 		return false, "", err
 	}
 	if reply.Replies == nil {
 		return false, "", errors.New("消息发送时出现问题 " + post.Body)
 	}
 	aiChat.LastReply = reply
+	aiChat.LastReply.Index = 0
 	return true, reply.Replies[0].Text, nil
 }
 func (aiChat *AiChat) GetAnotherMsg() string {
-	len := len(aiChat.LastReply.Replies)
-	if len < 2 {
+	length := len(aiChat.LastReply.Replies)
+	if length < 2 {
 		return "暂无可更换的对话！"
 	}
 	aiChat.LastReply.Index++
-	return aiChat.LastReply.Replies[aiChat.LastReply.Index%len].Text
+	return aiChat.LastReply.Replies[aiChat.LastReply.Index%length].Text
 }

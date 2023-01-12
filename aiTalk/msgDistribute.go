@@ -74,13 +74,19 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 		}
 	}
 	if len(ml) == 2 && ml[0] == "[CQ:at,qq="+strconv.FormatInt(config.Settings.BotName.Id, 10)+"]" {
-		if ml[1] == "聊天" {
+		switch ml[1] {
+		case "聊天":
 			msg := "请选择人格，10s后自动失效："
 			for i, v := range CharList {
 				msg += "\n" + generatNumber(i+1) + v.BotName
 			}
 			myUtil.SendGroupMessage(mjson.GroupID, msg)
 			MsgDistributeMap[name] = make(chan string)
+			if config.Settings.CharacterAi.Token == "" {
+				myUtil.SendGroupMessage(mjson.GroupID, `检测到您还未设置相关 token，游客单次会话最多七句，登录后无限制
+推荐私聊使用 "chattoken 【您的 token】" 来配置您的 token
+token 可以在浏览器开发者工具中从网络请求的 Header 中的 authorization 字段中获取，详细方法可以查看文档相关部分`)
+			}
 			var num int
 			var err error
 			select {
@@ -92,7 +98,7 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 					myUtil.SendGroupMessage(mjson.GroupID, "请输入正确的编号！")
 					return false
 				}
-			case <-time.After(10 * time.Second):
+			case <-time.After(time.Duration(config.Settings.CharacterAi.Timeout) * time.Second):
 				close(MsgDistributeMap[name])
 				MsgDistributeMap[name] = nil
 				myUtil.SendGroupMessage(mjson.GroupID, "[CQ:at,qq="+strconv.FormatInt(mjson.UserID, 10)+"] 发起的会话已失效！")
@@ -100,6 +106,8 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 			}
 			go EstablishCoversation(ws, num-1, mjson.UserID, mjson.GroupID)
 			return true
+		case "token":
+
 		}
 	}
 	if ok, _ := myUtil.IsInArray(config.Settings.Auth.Admin, mjson.UserID); ok && mjson.Message == "刷新人格列表" {
@@ -136,7 +144,6 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 		BotMap[strconv.FormatInt(uid, 10)+botId] = chat
 	} else {
 		chat = BotMap[strconv.FormatInt(uid, 10)+botId].(*AiChat)
-		chat.Renew()
 		len := len(chat.LastReply.Replies)
 		if len != 0 {
 			myUtil.SendGroupMessage(groupId, "请继续说吧，我们上次聊到哪里了？\n("+chat.LastReply.Replies[chat.LastReply.Index%len].Text+")")
@@ -152,8 +159,11 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 			if ok {
 				switch text {
 				case "刷新":
-					bot, err := chat.SetBot(botId)
-					if !bot {
+					ok, err := chat.createConversation()
+					if err != nil {
+						return
+					}
+					if !ok {
 						myUtil.ErrLog.Println("群组", groupId, "的", uid, "刷新 aiTalk 失败,error:", err)
 					} else {
 						if len(chat.CreatedInfo.Messages) > 0 {
@@ -161,15 +171,6 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 						} else {
 							myUtil.SendGroupMessage(groupId, "该人格暂无问候语，请直接开始对话")
 						}
-					}
-				case "重连":
-					renew, err := chat.Renew()
-					if renew {
-						BotMap[strconv.FormatInt(uid, 10)+botId] = chat
-						myUtil.SendGroupMessage(groupId, "重连成功！")
-					} else {
-						myUtil.ErrLog.Println("群组", groupId, "的", uid, "重连 aiTalk 失败,error:", err)
-						myUtil.SendGroupMessage(groupId, "重连失败！请稍后重试，仍存在问题请告知开发者")
 					}
 				case "换一句":
 					myUtil.SendGroupMessage(groupId, chat.GetAnotherMsg())
@@ -200,4 +201,11 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 			return
 		}
 	}
+}
+func SetCharacterAiToken(m []string) string {
+	if len(m) == 2 && m[0] == "chattoken" {
+		config.Settings.CharacterAi.Token = m[1]
+		return "设置成功！"
+	}
+	return ""
 }

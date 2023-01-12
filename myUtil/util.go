@@ -4,6 +4,8 @@ import (
 	"Lealra/config"
 	"Lealra/data"
 	"Lealra/returnStruct"
+	"bytes"
+	"compress/zlib"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -11,6 +13,7 @@ import (
 	"github.com/skip2/go-qrcode"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -27,8 +30,9 @@ var proxyIndex atomic.Uint32
 var PublicWs *websocket.Conn
 
 type LocalPic struct {
-	Md5    string `bson:"md5"`
-	Base64 string `bson:"base64"`
+	Md5           string `bson:"md5"`
+	Base64        string `bson:"base64"`
+	CompressedPic []byte `bson:"compressed_pic"`
 }
 
 func IsInArray(array interface{}, target interface{}) (bool, int) {
@@ -259,18 +263,27 @@ func GetLocalPicStorage(md5 string) string {
 			ErrLog.Println("获取本地图片时出现问题！\nerror:", err, "\nmd5:", md5)
 			return ""
 		}
-		return ret.Base64
+		if !config.Settings.LearnAndResponse.Compress || ret.CompressedPic == nil {
+			return ret.Base64
+		} else {
+			return getUnCompressed(ret.CompressedPic)
+		}
 	}
 }
 
 func LocalPicStorageUpdate(pic map[string]string) int {
 	count := 0
 	var err error
+	var update bson.D
 	c := data.Db.Collection("localPicStorage")
 	opt := options.Update().SetUpsert(true)
 	for k, v := range pic {
 		filter := bson.D{{"md5", k}}
-		update := bson.D{{"$set", bson.D{{"base64", v}}}}
+		if config.Settings.LearnAndResponse.Compress {
+			update = bson.D{{"$set", bson.D{{"compressed_pic", getCompressed(v)}}}}
+		} else {
+			update = bson.D{{"$set", bson.D{{"base64", v}}}}
+		}
 		_, err = c.UpdateOne(context.TODO(), filter, update, opt)
 		if err != nil {
 			ErrLog.Println("将图片存储至本地时出现异常，error:", err)
@@ -279,6 +292,21 @@ func LocalPicStorageUpdate(pic map[string]string) int {
 	}
 	MsgLog.Println("成功转储", count, "张图片")
 	return count
+}
+
+func getCompressed(input string) (data []byte) {
+	var in bytes.Buffer
+	w := zlib.NewWriter(&in)
+	w.Write([]byte(input))
+	defer w.Close()
+	return in.Bytes()
+}
+func getUnCompressed(input []byte) (data string) {
+	b := bytes.NewReader(input)
+	var out bytes.Buffer
+	r, _ := zlib.NewReader(b)
+	io.Copy(&out, r)
+	return out.String()
 }
 
 func GetProxyClient() *http.Client {

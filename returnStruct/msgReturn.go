@@ -1,6 +1,6 @@
 package returnStruct
 
-var MsgType = 1
+const MsgType = 1
 
 type Message struct {
 	Anonymous     interface{} `json:"anonymous"`

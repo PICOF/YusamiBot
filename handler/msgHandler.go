@@ -13,6 +13,9 @@ import (
 	"strconv"
 )
 
+const groupFilterIndex = 0
+const privateFilterIndex = 1
+
 func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error) {
 	var mjson returnStruct.Message
 	err := json.Unmarshal(msg, &mjson)
@@ -35,7 +38,7 @@ func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error
 		}
 		ret := returnStruct.SendMsg{Action: "send_msg", Param: returnStruct.Params{}}
 		if mjson.MessageType == "group" {
-			if !hasPermission(filterMode[0], mjson.GroupID, true) {
+			if !hasPermission(filterMode[groupFilterIndex], mjson.GroupID, true) {
 				myUtil.MsgLog.Println("Group " + strconv.FormatInt(mjson.GroupID, 10) + " do not have permission")
 				return nil, err
 			}
@@ -44,7 +47,7 @@ func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error
 			res, err := groupHandler(mjson, ws)
 			return resHandler(res, err, ret)
 		} else if mjson.MessageType == "private" {
-			if !hasPermission(filterMode[1], mjson.UserID, false) {
+			if !hasPermission(filterMode[privateFilterIndex], mjson.UserID, false) {
 				myUtil.MsgLog.Println("User " + strconv.FormatInt(mjson.UserID, 10) + " do not have permission")
 				return nil, err
 			}

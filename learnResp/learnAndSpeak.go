@@ -20,6 +20,8 @@ type LearnedResp struct {
 	Text string `bson:"text"`
 }
 
+//TODO: 学习和回复都需要修改一下相关逻辑：假如用户没有使用 MongoDB 或者连接未成功建立怎么办？不应该走常规流程，应当提醒用户使用 MongoDB
+
 func LearnResp(mjson returnStruct.Message, isAccurate bool) {
 	msg, err := returnStruct.GetReplyMsg(mjson)
 	if err != nil {

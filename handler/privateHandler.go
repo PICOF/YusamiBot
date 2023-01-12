@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Lealra/aiTalk"
 	"Lealra/config"
 	"Lealra/genshin"
 	"Lealra/learnResp"
@@ -135,6 +136,10 @@ func privateHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, err
 		return res, err
 	}
 	res, err = MakeChoice(mjson)
+	if res != "" {
+		return res, err
+	}
+	res = aiTalk.SetCharacterAiToken(ml)
 	if res != "" {
 		return res, err
 	}
