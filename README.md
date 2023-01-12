@@ -254,6 +254,18 @@ antiCf: # 针对相关反爬的设定
 
 ![](readmePic/botId.png)
 
+##### 关于个人 token 配置
+
+打开浏览器，按 `F12` 打开开发者工具，点击 `网络` 一栏，随意发起连接，点击向站点发送的请求，查看其请求头，每次请求时 Header 中的 authorization 中的 Token 值就是用户 Token：
+
+![](readmePic/getChatToken.png)
+
+可以在配置文件中配置，也可以手动导入：
+
+![](readmePic/setChatToken.jpg)
+
+*很显然这个逼设置了一个不合法的无效 Token，由于没有相关验证使得这一操作会成功，但是执行相关指令时会出错*
+
 **关于该功能还有几点要说的：**
 
 - 为了避免有大聪明忘记关会话，bot 6 分钟内得不到下一条会话内容自动退出
