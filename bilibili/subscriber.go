@@ -286,7 +286,7 @@ func DynamicTranslate(DynamicType int, content string) string {
 	case 4200:
 		ret = "▛" + dynamic.Title + "▟\n" + myUtil.GetBase64CQCode(dynamic.Cover) + "\n" + "◉ 开播时间\n" + dynamic.LiveTime + "\n" + "◉ 分区\n" + dynamic.ParentAreaName + " : " + dynamic.AreaName + "\n" + "◉ 标签\n" + dynamic.Tags + "\n" + "◉ 简介\n" + dynamic.Description + "\n" + "◉ 直通车\n" + dynamic.LiveUrl
 	/*
-		TODO 这部分只能说我也不清楚是什么动态类型，只能靠猜，感觉像是直播转发但是4200已经是验证过的直播转发类型了，这个与4200结构还不太一样，所以先打个注释，后面有机会再确认
+		这部分只能说我也不清楚是什么动态类型，只能靠猜，感觉像是直播转发但是4200已经是验证过的直播转发类型了，这个与4200结构还不太一样，所以先打个注释，后面有机会再确认
 		确实也是直播类型，不知道出于什么原因一个直播有这么多类型返回结构体还不一样
 	*/
 	case 4308:

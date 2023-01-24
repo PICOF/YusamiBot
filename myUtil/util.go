@@ -298,7 +298,7 @@ func getCompressed(input string) (data []byte) {
 	var in bytes.Buffer
 	w := zlib.NewWriter(&in)
 	w.Write([]byte(input))
-	defer w.Close()
+	w.Close()
 	return in.Bytes()
 }
 func getUnCompressed(input []byte) (data string) {

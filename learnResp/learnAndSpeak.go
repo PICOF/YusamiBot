@@ -83,7 +83,11 @@ func Speak(mjson returnStruct.Message, isAccurate bool) (string, error) {
 			myUtil.ErrLog.Println("解析精确学习回复时出现错误！\nerror:", err, "\ntext:", mjson.RawMessage)
 			return "记事本里的某条记录闪瞎了我的眼睛w(ﾟДﾟ)w", err
 		}
-		return elem.Resp, nil
+		if config.Settings.LearnAndResponse.UseBase64 {
+			return myUtil.CQCode2Base64(elem.Resp), nil
+		} else {
+			return elem.Resp, nil
+		}
 	} else {
 		cur, err := col.Find(context.TODO(), filter)
 		if err != nil {
