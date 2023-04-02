@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -361,7 +362,7 @@ func GetUserList(keyword string) (string, error) {
 	}
 	defer get.Body.Close()
 	var body []byte
-	body, err = ioutil.ReadAll(get.Body)
+	body, err = io.ReadAll(get.Body)
 	var res UserList
 	err = json.Unmarshal(body, &res)
 	if res.Code != 0 {

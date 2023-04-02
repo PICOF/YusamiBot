@@ -34,7 +34,24 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 		switch ml[0] {
 		case "/talk":
 			msg, err := OpenAiMap[name].SendAndReceiveMsg(mjson.Message[6:])
-			myUtil.SendGroupMessage(mjson.GroupID, msg)
+			switch OpenAiMap[name].Mode {
+			case "混合":
+				myUtil.SendGroupMessage(mjson.GroupID, msg)
+				fallthrough
+			case "音频":
+				if err == nil {
+					if len(msg) > 500 {
+						myUtil.SendGroupMessage(mjson.GroupID, "文字响应过长")
+						break
+					}
+					e := OpenAiMap[name].GenerateVoice(msg, mjson)
+					if e != nil {
+						myUtil.ErrLog.Println("OpenAi talk 音频生成失败时出错！error:", err)
+					}
+				}
+			default:
+				myUtil.SendGroupMessage(mjson.GroupID, msg)
+			}
 			if err != nil {
 				myUtil.ErrLog.Println("OpenAi talk 请求时出错！error:", err)
 			}
@@ -52,6 +69,25 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 				myUtil.ErrLog.Println("OpenAi edit 请求时出错！error:", err)
 			}
 			return true
+		case "/mode":
+			if len(ml) > 2 {
+				return false
+			} else {
+				if ok, _ := myUtil.IsInArray([]string{"文本", "混合", "音频"}, ml[1]); ok {
+					OpenAiMap[name].Mode = ml[1]
+					myUtil.SendGroupMessage(mjson.GroupID, "模式配置成功！")
+				} else {
+					myUtil.SendGroupMessage(mjson.GroupID, "共三种模式：\n【文本】：仅生成文本\n【混合】：生成文本同时会生成语音，请注意需要相应模块支持\n【音频】：仅生成语音，不推荐")
+				}
+			}
+			return true
+		case "/voice":
+			if len(ml) != 2 {
+				return false
+			} else {
+				OpenAiMap[name].Voice = ml[1]
+				myUtil.SendGroupMessage(mjson.GroupID, "音源配置成功！")
+			}
 		}
 	}
 	if MsgDistributeMap[name] != nil {

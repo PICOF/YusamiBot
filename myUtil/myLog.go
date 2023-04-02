@@ -29,13 +29,12 @@ func cleanLogs() {
 	cleanErrLogs()
 }
 
-// FIXME: 日志删除出现问题，由于未判断上下午的区别，所以导致两个文件一起删除了
 func cleanMsgLogs() {
-	date := time.Now().Add(-config.Settings.Logs.MsgLogsRefreshCycle * time.Hour).Format("2006-01-02T3")
+	date := time.Now().Add(-config.Settings.Logs.MsgLogsRefreshCycle * time.Hour).Format("2006-01-02T3PM")
 	root := "./log/diaryofyusami"
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			if info.Name()[:12] == date {
+			if info.Name()[:13] == date {
 				err := os.Remove(path)
 				if err != nil {
 					ErrLog.Println("刪除信息日志時出現問題！Error:", err)

@@ -36,6 +36,7 @@ type OpenAiSetting struct {
 
 type OpenAi struct {
 	Token   string        `yaml:"token"`
+	Retries int           `yaml:"retries"`
 	Setting OpenAiSetting `yaml:"settings"`
 }
 
@@ -93,8 +94,9 @@ type Setting struct {
 }
 
 type MsgFilterMode struct {
-	GroupFilterMode   int `yaml:"groupFilterMode"`
-	PrivateFilterMode int `yaml:"privateFilterMode"`
+	GroupFilterMode   int     `yaml:"groupFilterMode"`
+	PrivateFilterMode int     `yaml:"privateFilterMode"`
+	BanId             []int64 `yaml:"banId"`
 }
 
 type DataSource struct {

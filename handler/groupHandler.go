@@ -3,6 +3,7 @@ package handler
 import (
 	"Lealra/JMComic"
 	"Lealra/aiTalk"
+	"Lealra/aiVoice"
 	"Lealra/bangumi"
 	"Lealra/bilibili"
 	"Lealra/config"
@@ -176,6 +177,11 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 	if res != "" {
 		return res, err
 	}
+	res, err = aiVoice.VoiceGenerateHandler(mjson)
+	if res != "" {
+		return res, err
+	}
+	//以下优先级低于后续增加的功能
 	res, err = learnResp.Speak(mjson, true)
 	if res != "" {
 		return res, err

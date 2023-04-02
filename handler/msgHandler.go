@@ -33,6 +33,9 @@ func MsgHandler(ws *websocket.Conn, msg []byte, filterMode []int) ([]byte, error
 		}
 	}
 	if mjson.PostType == "message" {
+		if ok, _ := myUtil.IsInArray(config.Settings.Mode.BanId, mjson.UserID); ok {
+			return nil, nil
+		}
 		if mjson.RawMessage == "" {
 			return nil, errors.New("消息中出现零长段，user_id=" + strconv.FormatInt(mjson.UserID, 10) + "，group_id=" + strconv.FormatInt(mjson.GroupID, 10))
 		}

@@ -1,0 +1,146 @@
+{
+  "spaces": [
+    {
+      "url": "https://huggingface.co/spaces/PICOF/vits-uma-genshin-honkai",
+      "mode": 3,
+      "inputOp": [
+        ["vits","Language","中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）"]
+      ],
+      "speakerChoice": [
+        "vits",
+        "Speaker"
+      ],
+      "msgInputOp": [
+        "vits",
+        "Text"
+      ],
+      "outputOp": [
+        "vits",
+        "Output Audio"
+      ],
+      "generateOp": [
+        "vits",
+        "Submit"
+      ]
+    }
+  ],
+  "single": [
+    {
+      "speaker": "才羽桃井",
+      "space": {
+        "url": "https://huggingface.co/spaces/PICOF/vits-models",
+        "mode": 3,
+        "inputOp": [
+          ["中文", "才羽桃井", "语言","中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）"]
+        ],
+        "msgInputOp": [
+          "中文",
+          "才羽桃井",
+          "文本"
+        ],
+        "outputOp": [
+          "中文",
+          "才羽桃井",
+          "输出音频"
+        ],
+        "generateOp": [
+          "中文",
+          "才羽桃井",
+          "生成"
+        ]
+      }
+    },
+    {
+      "speaker": "锦木千束",
+      "space": {
+        "url": "https://huggingface.co/spaces/PICOF/vits-models",
+        "mode": 3,
+        "inputOp": [
+          ["中文", "锦木千束", "语言","中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）"]
+        ],
+        "msgInputOp": [
+          "中文",
+          "锦木千束",
+          "文本"
+        ],
+        "outputOp": [
+          "中文",
+          "锦木千束",
+          "输出音频"
+        ],
+        "generateOp": [
+          "中文",
+          "锦木千束",
+          "生成"
+        ]
+      }
+    },
+    {
+      "speaker": "井上泷奈",
+      "space": {
+        "url": "https://huggingface.co/spaces/PICOF/vits-models",
+        "mode": 3,
+        "inputOp": [
+          ["中文", "井上泷奈", "语言","中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）"]
+        ],
+        "msgInputOp": [
+          "中文",
+          "井上泷奈",
+          "文本"
+        ],
+        "outputOp": [
+          "中文",
+          "井上泷奈",
+          "输出音频"
+        ],
+        "generateOp": [
+          "中文",
+          "井上泷奈",
+          "生成"
+        ]
+      }
+    },
+    {
+      "speaker": "砂狼白子",
+      "space": {
+        "url": "https://huggingface.co/spaces/PICOF/vits-models",
+        "mode": 3,
+        "inputOp": [
+          ["中文", "砂狼白子", "语言","中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）"]
+        ],
+        "msgInputOp": [
+          "中文",
+          "砂狼白子",
+          "文本"
+        ],
+        "outputOp": [
+          "中文",
+          "砂狼白子",
+          "输出音频"
+        ],
+        "generateOp": [
+          "中文",
+          "砂狼白子",
+          "生成"
+        ]
+      }
+    },
+    {
+      "speaker": "atri",
+      "space": {
+        "linkMode": "poll",
+        "url": "https://huggingface.co/spaces/PICOF/vits-ATR",
+        "mode": 2,
+        "msgInputOp": [
+          "Input Text"
+        ],
+        "outputOp": [
+          "Output Audio"
+        ],
+        "generateOp": [
+          "Submit"
+        ]
+      }
+    }
+  ]
+}

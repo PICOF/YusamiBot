@@ -1,6 +1,10 @@
 msgFilterMode:
   groupFilterMode: 2 #0不过滤，1采用黑名单方式，2采用白名单方式，对应的表是 PermissionList
   privateFilterMode: 2 # 同上
+  # 总有那么几个傻逼，不是吗
+  banId:
+    - 1037832238
+    - 1821525505
 botName:
   name: Isara # 一般用于自我称呼
   fullName: 19岁现役JD Isara # 全称，一般是在转发消息这种地方使用
@@ -40,7 +44,8 @@ setu:
   setuGroupSender: true # 是否能群发，现在改了显示方式已经没有多少被封杀的可能了
   api: https://api.lolicon.app/setu/v2 # https://lolisuki.cc/api/setu/v1
 openAi:
-  token: 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 #your token
+  token: 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 #your token
+  retries: 3 # 失败后重试次数
   settings: # 详细配置见官方 api 文档
     chat:
       memory: false # 是否开启记忆化，不建议，token 烧太快

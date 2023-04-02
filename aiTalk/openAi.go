@@ -1,16 +1,21 @@
 package aiTalk
 
 import (
+	"Lealra/aiVoice"
 	"Lealra/config"
+	"Lealra/myUtil"
+	"Lealra/returnStruct"
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 )
 
 type OpenAiPersonal struct {
+	Voice   string
+	Mode    string
 	Preset  string
 	Context string
 	Reply   string
@@ -42,16 +47,22 @@ func (openAi *OpenAiPersonal) EditMsg(text string, require string) (string, erro
 	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/edits", bytes.NewBuffer([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+config.Settings.OpenAi.Token)
-	resp, err := (&http.Client{}).Do(req)
+	var resp *http.Response
+	for i := 0; i < config.Settings.OpenAi.Retries; i++ {
+		resp, err = (&http.Client{}).Do(req)
+		if err == nil && resp.StatusCode == 200 {
+			break
+		}
+	}
 	if err != nil {
 		return "哎呀，出错了！", err
 	} else if resp.StatusCode != 200 {
-		v, _ := ioutil.ReadAll(resp.Body)
+		v, _ := io.ReadAll(resp.Body)
 		return "哎呀，出错了！", errors.New(resp.Status + " " + string(v) + " " + body)
 	}
 	defer resp.Body.Close()
 	var content []byte
-	content, err = ioutil.ReadAll(resp.Body)
+	content, err = io.ReadAll(resp.Body)
 	var reply OpenAiReply
 	err = json.Unmarshal(content, &reply)
 	if err != nil {
@@ -71,7 +82,7 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 		openAi.Preset = ""
 		return "刷新成功！", nil
 	case "配置":
-		return "模型：" + config.Settings.OpenAi.Setting.ChatSetting.Model + "\n预设：" + openAi.Preset, nil
+		return "模型：" + config.Settings.OpenAi.Setting.ChatSetting.Model + "\n预设：" + openAi.Preset + "\n模式：" + openAi.Mode + "\n音源：" + openAi.Voice, nil
 	default:
 		text += "\n"
 	}
@@ -84,16 +95,22 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 	req, _ := http.NewRequest("POST", "https://api.openai.com/v1/completions", bytes.NewBuffer([]byte(body)))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+config.Settings.OpenAi.Token)
-	resp, err := (&http.Client{}).Do(req)
+	var resp *http.Response
+	for i := 0; i < config.Settings.OpenAi.Retries; i++ {
+		resp, err = (&http.Client{}).Do(req)
+		if err == nil && resp.StatusCode == 200 {
+			break
+		}
+	}
 	if err != nil {
 		return "哎呀，出错了！", err
 	} else if resp.StatusCode != 200 {
-		v, _ := ioutil.ReadAll(resp.Body)
+		v, _ := io.ReadAll(resp.Body)
 		return "哎呀，出错了！", errors.New(resp.Status + " " + string(v) + " " + body)
 	}
 	defer resp.Body.Close()
 	var content []byte
-	content, err = ioutil.ReadAll(resp.Body)
+	content, err = io.ReadAll(resp.Body)
 	var reply OpenAiReply
 	err = json.Unmarshal(content, &reply)
 	if err != nil {
@@ -109,4 +126,19 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 
 func (openAi *OpenAiPersonal) SetPreset(preset string) {
 	openAi.Preset = preset + "\\n"
+}
+
+func (openAi *OpenAiPersonal) GenerateVoice(msg string, mjson returnStruct.Message) error {
+	if openAi.Voice != "" {
+		mjson.RawMessage = openAi.Voice + "说 " + msg
+		voice, err := aiVoice.VoiceGenerateHandler(mjson)
+		if err != nil {
+			myUtil.SendGroupMessage(mjson.GroupID, "音频生成失败")
+			return err
+		}
+		myUtil.SendGroupMessage(mjson.GroupID, voice)
+	} else {
+		myUtil.SendGroupMessage(mjson.GroupID, "未指定音源！")
+	}
+	return nil
 }
