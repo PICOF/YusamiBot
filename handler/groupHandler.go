@@ -8,6 +8,7 @@ import (
 	"Lealra/bilibili"
 	"Lealra/config"
 	"Lealra/data"
+	"Lealra/funnyReply"
 	"Lealra/genshin"
 	"Lealra/learnResp"
 	"Lealra/myUtil"
@@ -178,6 +179,10 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 		return res, err
 	}
 	res, err = aiVoice.VoiceGenerateHandler(mjson)
+	if res != "" {
+		return res, err
+	}
+	res, err = funnyReply.ReplyHandler(mjson)
 	if res != "" {
 		return res, err
 	}

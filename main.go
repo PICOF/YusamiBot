@@ -2,10 +2,10 @@ package main
 
 import (
 	"Lealra/JMComic"
-	"Lealra/aiTalk"
 	"Lealra/bilibili"
 	"Lealra/config"
 	"Lealra/data"
+	"Lealra/funnyReply"
 	"Lealra/handler"
 	"Lealra/learnResp"
 	"Lealra/myUtil"
@@ -33,17 +33,14 @@ var upgrade = websocket.Upgrader{
 }
 
 func main() {
-	config.GetSetting()
-	data.ConnInit()
 	defer func(client *mongo.Client, ctx context.Context) {
 		err := client.Disconnect(ctx)
 		if err != nil {
 			log.Fatalln(err)
 		}
 	}(data.Db.Client(), context.TODO())
-	myUtil.SetLogger()
 	go myUtil.RenewLoggers()
-	aiTalk.GetCharacterList()
+	go funnyReply.CleanOldRecord()
 	go bilibili.StartSubscribeScanner()
 	go learnResp.StartExtendExpirationTimeLoop()
 	gin.DefaultWriter = io.MultiWriter(os.Stdout)

@@ -5,6 +5,7 @@ msgFilterMode:
   banId:
     - 1037832238
     - 1821525505
+    - 1841295551
 botName:
   name: Isara # 一般用于自我称呼
   fullName: 19岁现役JD Isara # 全称，一般是在转发消息这种地方使用
@@ -67,6 +68,9 @@ learnAndResponse:
   msgInterval: 2 # 消息间隔，单位s,过短容易出事
   useBase64: true # 空间够用的话强烈建议打开
   compress: true #是否对获取到的数据进行压缩，采用的是 zlib 压缩，可以节省存储空间
+daoli:
+  maxTime: 100 # 语句生成的最大迭代次数
+  expiration: 48 # 消息过期时间，单位是小时
 bilibili:
   status: true # 是否开启，true 开启 false 关闭
   interval: 1 # 单位 s，扫描爬取每个 up 的时间间隔，会上下浮动 0.5 秒

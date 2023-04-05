@@ -3,9 +3,30 @@ package config
 import (
 	"fmt"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
+	"os"
 	"time"
 )
+
+type Setting struct {
+	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
+	DataSource       DataSource       `yaml:"dataSource"`
+	Func             Function         `yaml:"function"`
+	Auth             Auth             `yaml:"auth"`
+	Logs             Logs             `yaml:"logs"`
+	Server           Server           `yaml:"server"`
+	AiPaint          AiPaint          `yaml:"aiPaint"`
+	Setu             Setu             `yaml:"setu"`
+	BotName          BotName          `yaml:"botName"`
+	Bangumi          BangumiSettings  `yaml:"bangumi"`
+	OpenAi           OpenAi           `yaml:"openAi"`
+	CharacterAi      CharacterAi      `yaml:"characterAi"`
+	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
+	Bilibili         Bilibili         `yaml:"bilibili"`
+	Daoli            Daoli            `yaml:"daoli"`
+	Music            Music            `yaml:"music"`
+	AntiCf           AntiCf           `yaml:"antiCf"`
+	Proxy            Proxy            `yaml:"proxy"`
+}
 
 type BotName struct {
 	Name           string `yaml:"name"`
@@ -73,24 +94,9 @@ type CharacterAi struct {
 	Timeout int    `yaml:"timeout"`
 }
 
-type Setting struct {
-	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
-	DataSource       DataSource       `yaml:"dataSource"`
-	Func             Function         `yaml:"function"`
-	Auth             Auth             `yaml:"auth"`
-	Logs             Logs             `yaml:"logs"`
-	Server           Server           `yaml:"server"`
-	AiPaint          AiPaint          `yaml:"aiPaint"`
-	Setu             Setu             `yaml:"setu"`
-	BotName          BotName          `yaml:"botName"`
-	Bangumi          BangumiSettings  `yaml:"bangumi"`
-	OpenAi           OpenAi           `yaml:"openAi"`
-	CharacterAi      CharacterAi      `yaml:"characterAi"`
-	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
-	Bilibili         Bilibili         `yaml:"bilibili"`
-	Music            Music            `yaml:"music"`
-	AntiCf           AntiCf           `yaml:"antiCf"`
-	Proxy            Proxy            `yaml:"proxy"`
+type Daoli struct {
+	MaxTime    int `yaml:"maxTime"`
+	Expiration int `yaml:"expiration"`
 }
 
 type MsgFilterMode struct {
@@ -145,7 +151,7 @@ var BilibiliStatusChan = make(chan bool)
 var PicRenewChan = make(chan bool)
 
 func GetSetting() {
-	file, err := ioutil.ReadFile("./config.yaml")
+	file, err := os.ReadFile("./config.yaml")
 	if err != nil {
 		fmt.Println("Error reading config file: ", err)
 	}
