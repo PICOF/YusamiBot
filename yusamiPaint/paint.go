@@ -4,9 +4,10 @@ import (
 	"Lealra/config"
 	"Lealra/myUtil"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -23,7 +24,7 @@ var filterMap = map[string]string{
 var tokenLock sync.Mutex
 var tokenIndex = 0
 
-func GetPic(tags string, nTags string, shape string, nsfw string, seed string) (string, error) {
+func GetPicFree(tags string, nTags string, shape string, nsfw string, seed string) (string, error) {
 	for oldChr, newChr := range filterMap {
 		tags = strings.ReplaceAll(tags, oldChr, newChr)
 		nTags = strings.ReplaceAll(nTags, oldChr, newChr)
@@ -31,11 +32,11 @@ func GetPic(tags string, nTags string, shape string, nsfw string, seed string) (
 	var get *http.Response
 	var err error
 	tokenLock.Lock()
-	token := config.Settings.AiPaint.Token[tokenIndex]
-	tokenIndex = (tokenIndex + 1) % len(config.Settings.AiPaint.Token)
+	token := config.Settings.AiPaint.Free.Token[tokenIndex]
+	tokenIndex = (tokenIndex + 1) % len(config.Settings.AiPaint.Free.Token)
 	tokenLock.Unlock()
 	myUtil.MsgLog.Println("使用Token：" + token + "进行绘图")
-	get, err = http.Get(config.Settings.AiPaint.Api + "/got_image?tags=" + url.QueryEscape(tags) + "&ntags=" + url.QueryEscape(nTags) + "&token=" + token + "&shape=" + shape + "&r18=" + nsfw + seed)
+	get, err = http.Get(config.Settings.AiPaint.Free.Api + "/got_image?tags=" + url.QueryEscape(tags) + "&ntags=" + url.QueryEscape(nTags) + "&token=" + token + "&shape=" + shape + "&r18=" + nsfw + seed)
 	if err != nil {
 		myUtil.ErrLog.Println("请求网站绘图时出现异常！error:", err)
 		return "没找到我的画笔QAQ", err
@@ -45,20 +46,20 @@ func GetPic(tags string, nTags string, shape string, nsfw string, seed string) (
 		myUtil.ErrLog.Println("请求网站绘图时出现异常！error:", get.Status, " ", get.StatusCode)
 		return "网络塞车啦！过一会儿再试呢~", err
 	}
-	content, err := ioutil.ReadAll(get.Body)
+	content, err := io.ReadAll(get.Body)
 	if err != nil {
 		myUtil.ErrLog.Println("读取ai绘图response时出现异常！error:", err)
 		return "我画了个什么(((φ(◎ロ◎;)φ)))", err
 	}
 	if nsfw == "0" {
-		err = ioutil.WriteFile("pic/"+time.Now().Format("2006-01-02T3-04PM")+get.Header.Get("Seed")+".png", content, 0666)
+		err = os.WriteFile("pic/"+time.Now().Format("2006-01-02T3-04PM")+get.Header.Get("Seed")+".png", content, 0666)
 		if err != nil {
 			myUtil.ErrLog.Println("保存ai绘制图时出现异常！error:", err)
 		}
 		return "[CQ:image,file=base64://" + base64.StdEncoding.EncodeToString(content) + "]\n种子:" + get.Header.Get("Seed") + "\ntags:" + tags + "\nntags:" + nTags, nil
 	} else {
 		filename := time.Now().Format("2006-01-02T3-04PM") + get.Header.Get("Seed") + ".png"
-		err = ioutil.WriteFile("nsfw/"+filename, content, 0666)
+		err = os.WriteFile("nsfw/"+filename, content, 0666)
 		if err != nil {
 			myUtil.ErrLog.Println("保存ai🐍图时出现异常！error:", err)
 		}

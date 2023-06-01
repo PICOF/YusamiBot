@@ -2,10 +2,14 @@ package config
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v2"
-	"os"
+	"github.com/fsnotify/fsnotify"
+	"github.com/mitchellh/mapstructure"
+	"github.com/spf13/viper"
+	"log"
 	"time"
 )
+
+var config *viper.Viper
 
 type Setting struct {
 	Mode             MsgFilterMode    `yaml:"msgFilterMode"`
@@ -23,6 +27,7 @@ type Setting struct {
 	LearnAndResponse LearnAndResponse `yaml:"learnAndResponse"`
 	Bilibili         Bilibili         `yaml:"bilibili"`
 	Daoli            Daoli            `yaml:"daoli"`
+	HZYS             HZYS             `yaml:"hzys"`
 	Music            Music            `yaml:"music"`
 	AntiCf           AntiCf           `yaml:"antiCf"`
 	Proxy            Proxy            `yaml:"proxy"`
@@ -53,6 +58,11 @@ type OpenAiSetting struct {
 	EditSetting struct {
 		Model string `yaml:"model"`
 	} `yaml:"edit"`
+	CommSetting struct {
+		Preset string `yaml:"preset"`
+		MsgCap int    `yaml:"msgCap"`
+		MaxLen int    `yaml:"maxLen"`
+	} `yaml:"comm"`
 }
 
 type OpenAi struct {
@@ -99,6 +109,10 @@ type Daoli struct {
 	Expiration int `yaml:"expiration"`
 }
 
+type HZYS struct {
+	SourceDir string `yaml:"sourceDir"`
+}
+
 type MsgFilterMode struct {
 	GroupFilterMode   int     `yaml:"groupFilterMode"`
 	PrivateFilterMode int     `yaml:"privateFilterMode"`
@@ -127,8 +141,10 @@ type Function struct {
 }
 
 type AiPaint struct {
-	Api   string   `yaml:"api"`
-	Token []string `yaml:"token"`
+	Free struct {
+		Api   string   `yaml:"api"`
+		Token []string `yaml:"token"`
+	} `yaml:"free"`
 }
 
 type Auth struct {
@@ -147,25 +163,48 @@ type Setu struct {
 }
 
 var Settings = &Setting{}
-var BilibiliStatusChan = make(chan bool)
-var PicRenewChan = make(chan bool)
+var BilibiliStatusChan = make(chan struct{})
+var PicRenewChan = make(chan struct{})
 
 func GetSetting() {
-	file, err := os.ReadFile("./config.yaml")
+	err := config.Unmarshal(&Settings, func(config *mapstructure.DecoderConfig) {
+		config.TagName = "yaml"
+	})
 	if err != nil {
-		fmt.Println("Error reading config file: ", err)
+		return
 	}
-	yaml.Unmarshal(file, &Settings)
+	if err != nil {
+		fmt.Println("Error in unmarshal config: ", err)
+	}
 	if Settings.Bilibili.Status {
 		select {
-		case BilibiliStatusChan <- true:
+		case BilibiliStatusChan <- struct{}{}:
 		default:
 		}
 	}
 	if Settings.LearnAndResponse.RenewSwitch {
 		select {
-		case PicRenewChan <- true:
+		case PicRenewChan <- struct{}{}:
 		default:
 		}
 	}
+}
+func GetConfig(configName string) (v *viper.Viper) {
+	v = viper.New()
+	v.SetConfigName(configName)
+	v.AddConfigPath(".")
+	v.AddConfigPath("..")
+	v.AddConfigPath("./config")
+	v.AddConfigPath("../../config")
+	v.AddConfigPath("../../../config")
+	err := v.ReadInConfig() // 查找并读取配置文件
+	if err != nil {         // 处理读取配置文件的错误
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+	v.WatchConfig()
+	v.OnConfigChange(func(e fsnotify.Event) {
+		log.Println("config file changes: ", e.String())
+		GetSetting()
+	})
+	return
 }

@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-var MsgLog, ErrLog *log.Logger
+var (
+	ErrLog *log.Logger
+	MsgLog *log.Logger
+)
 
 func SetLogger() {
 	mf, err := os.OpenFile("log/diaryofyusami/"+time.Now().Format("2006-01-02T3PM")+".log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)

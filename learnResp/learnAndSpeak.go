@@ -49,7 +49,9 @@ func LearnResp(mjson returnStruct.Message, isAccurate bool) {
 			myUtil.ErrLog.Println("重复学习相同内容，response:" + resp)
 			return
 		} else {
-			myUtil.ErrLog.Println("学习新回复"+mjson.RawMessage+"-->"+msg.RawMessage+"时出错：", err)
+			myUtil.SendGroupMessage(mjson.GroupID, "学习失败！")
+			myUtil.ErrLog.Println("学习新回复"+mjson.RawMessage+"-->"+msg.RetData.Message+"时出错：", err)
+			return
 		}
 	}
 	myUtil.SendGroupMessage(mjson.GroupID, "学习成功！")

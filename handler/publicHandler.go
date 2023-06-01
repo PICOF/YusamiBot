@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -59,7 +59,7 @@ func getNetEaseMusic(song string, random bool) (*Song, string, error) {
 			return nil, "网络好像出了点小问题~", err
 		}
 		defer resp.Body.Close() //在回复后必须关闭回复的主体
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		var song NetEaseResp
 		json.Unmarshal(body, &song)
 		if song.Code != 200 {
@@ -219,12 +219,12 @@ func aiPaint(mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
 	if size != "" {
 		size = size[5:]
 	} else {
-		size = "Portrait"
+		size = "512x512"
 	}
 	if strings.Contains(msg, "nsfw") {
 		nsfw = "1"
 	}
-	return yusamiPaint.GetPic(tag, nTag, size, nsfw, seed)
+	return yusamiPaint.GetPicFree(tag, nTag, size, nsfw, seed)
 	//if len(msg) == 3 {
 	//	return yusamiPaint.GetPic(msg[2], "", "Portrait", "1")
 	//} else {
@@ -232,7 +232,7 @@ func aiPaint(mjson returnStruct.Message, ws *websocket.Conn) (string, error) {
 	//}
 }
 
-func GetTag(mjson returnStruct.Message, ws *websocket.Conn, isGroup bool) (string, error) {
+func GetTag(mjson returnStruct.Message, isGroup bool) (string, error) {
 	msg := mjson.RawMessage
 	if len(msg) < 12 {
 		return "", nil
@@ -284,7 +284,7 @@ func getBase64Pic(msg string, mjson returnStruct.Message) (string, error) {
 		return "没、没有成功获取到原料nya！", err
 	}
 	defer get.Body.Close()
-	pic, err := ioutil.ReadAll(get.Body)
+	pic, err := io.ReadAll(get.Body)
 	base64Pic := "data:image/png;base64," + base64.StdEncoding.EncodeToString(pic)
 	return base64Pic, nil
 }

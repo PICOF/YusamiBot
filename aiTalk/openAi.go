@@ -14,11 +14,14 @@ import (
 )
 
 type OpenAiPersonal struct {
-	Voice   string
-	Mode    string
-	Preset  string
-	Context string
-	Reply   string
+	Index       int
+	MsgExamples []string
+	Probability float64
+	Voice       string
+	Mode        string
+	Preset      string
+	Context     string
+	Reply       string
 }
 
 type OpenAiReply struct {
@@ -122,6 +125,10 @@ func (openAi *OpenAiPersonal) SendAndReceiveMsg(text string) (string, error) {
 		openAi.Reply = strings.Trim(reply.Choices[0].Text, "\n ") + "\\n"
 	}
 	return strings.Trim(strings.ReplaceAll(reply.Choices[0].Text, "\\n", "\n"), "\n "), nil
+}
+
+func (openAi *OpenAiPersonal) SetProbability(probability float64) {
+	openAi.Probability = probability
 }
 
 func (openAi *OpenAiPersonal) SetPreset(preset string) {

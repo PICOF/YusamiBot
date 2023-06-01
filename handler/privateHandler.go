@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Lealra/HZYS"
 	"Lealra/aiTalk"
 	"Lealra/config"
 	"Lealra/genshin"
@@ -123,8 +124,12 @@ func privateHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, err
 	if res != "" {
 		return res, err
 	}
-	res, err = GetTag(mjson, ws, false)
+	res, err = GetTag(mjson, false)
 	if res != "" {
+		return res, err
+	}
+	res, err = HZYS.Generate(mjson)
+	if res != "" || err != nil {
 		return res, err
 	}
 	res, err = learnResp.Speak(mjson, true)

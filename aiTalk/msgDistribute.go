@@ -6,6 +6,8 @@ import (
 	"Lealra/returnStruct"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +18,7 @@ var BotMap = make(map[string]interface{})
 var OpenAiMap = make(map[string]*OpenAiPersonal)
 var numList = []string{"₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"}
 
-func generatNumber(num int) string {
+func generateNumber(num int) string {
 	var ret string
 	for num > 0 {
 		ret = numList[num%10] + ret
@@ -25,13 +27,57 @@ func generatNumber(num int) string {
 	return ret
 }
 
+func commJudgement(probability float64) bool {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Float64() < probability
+}
+
+func CommGenerate(mjson returnStruct.Message) (string, error) {
+	compile := regexp.MustCompile("\\[CQ:.*\\]")
+	pureText := compile.ReplaceAllString(mjson.RawMessage, "")
+	if pureText != "" && len([]rune(pureText)) <= config.Settings.OpenAi.Setting.CommSetting.MaxLen {
+		name := "comm" + strconv.FormatInt(mjson.GroupID, 10)
+		if _, ok := OpenAiMap[name]; ok {
+			if len(OpenAiMap[name].MsgExamples) < config.Settings.OpenAi.Setting.CommSetting.MsgCap {
+				OpenAiMap[name].MsgExamples = append(OpenAiMap[name].MsgExamples, pureText)
+			} else {
+				OpenAiMap[name].MsgExamples = append(OpenAiMap[name].MsgExamples[1:], pureText)
+			}
+			if len(OpenAiMap[name].MsgExamples) == config.Settings.OpenAi.Setting.CommSetting.MsgCap && commJudgement(OpenAiMap[name].Probability) {
+				msg, err := OpenAiMap[name].SendAndReceiveMsg("\n" + strings.Join(OpenAiMap[name].MsgExamples, "\n") + "\n你：")
+				if err != nil {
+					myUtil.ErrLog.Println("openai 群聊生成失败！error: ", err)
+					return "", err
+				}
+				return strings.Trim(msg, "\"\"”“"), nil
+			}
+		}
+	}
+	return "", nil
+}
+
 func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) bool {
 	name := strconv.FormatInt(mjson.GroupID, 10) + strconv.FormatInt(mjson.UserID, 10)
 	if len(ml) >= 2 {
+		if ml[0] == "/comm" {
+			name = "comm" + strconv.FormatInt(mjson.GroupID, 10)
+		}
 		if _, ok := OpenAiMap[name]; !ok {
 			OpenAiMap[name] = &OpenAiPersonal{}
 		}
 		switch ml[0] {
+		case "/comm":
+			float, err := strconv.ParseFloat(ml[1], 64)
+			if err != nil {
+				myUtil.SendGroupMessage(mjson.GroupID, "请检查输入格式")
+				return true
+			}
+			OpenAiMap[name].Index = 0
+			OpenAiMap[name].MsgExamples = nil
+			OpenAiMap[name].SetProbability(float)
+			OpenAiMap[name].SetPreset(config.Settings.OpenAi.Setting.CommSetting.Preset)
+			myUtil.SendGroupMessage(mjson.GroupID, "概率因子已设置")
+			return true
 		case "/talk":
 			msg, err := OpenAiMap[name].SendAndReceiveMsg(mjson.Message[6:])
 			switch OpenAiMap[name].Mode {
@@ -114,7 +160,7 @@ func MsgHandler(ml []string, mjson returnStruct.Message, ws *websocket.Conn) boo
 		case "聊天":
 			msg := "请选择人格，10s后自动失效："
 			for i, v := range CharList {
-				msg += "\n" + generatNumber(i+1) + v.BotName
+				msg += "\n" + generateNumber(i+1) + v.BotName
 			}
 			myUtil.SendGroupMessage(mjson.GroupID, msg)
 			MsgDistributeMap[name] = make(chan string)
@@ -180,9 +226,9 @@ func EstablishCoversation(ws *websocket.Conn, botNum int, uid int64, groupId int
 		BotMap[strconv.FormatInt(uid, 10)+botId] = chat
 	} else {
 		chat = BotMap[strconv.FormatInt(uid, 10)+botId].(*AiChat)
-		len := len(chat.LastReply.Replies)
-		if len != 0 {
-			myUtil.SendGroupMessage(groupId, "请继续说吧，我们上次聊到哪里了？\n("+chat.LastReply.Replies[chat.LastReply.Index%len].Text+")")
+		length := len(chat.LastReply.Replies)
+		if length != 0 {
+			myUtil.SendGroupMessage(groupId, "请继续说吧，我们上次聊到哪里了？\n("+chat.LastReply.Replies[chat.LastReply.Index%length].Text+")")
 		} else {
 			BotMap[strconv.FormatInt(uid, 10)+botId] = nil
 			myUtil.SendGroupMessage(groupId, "会话连接出现了意外问题！请尝试重新连接")

@@ -4,7 +4,7 @@ import (
 	"Lealra/myUtil"
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -26,7 +26,7 @@ func TagAnalyze(base64Pic string, msgID int64, isGroup bool, userID int64) (stri
 		return "", err
 	}
 	defer post.Body.Close()
-	body, err := ioutil.ReadAll(post.Body)
+	body, err := io.ReadAll(post.Body)
 	var bd Ret
 	err = json.Unmarshal(body, &bd)
 	if bd.Data == nil {
@@ -66,7 +66,7 @@ func TagToPic(base64Pic string, msgID int64, isGroup bool, userID int64) (string
 		return "", err
 	}
 	defer post.Body.Close()
-	body, err := ioutil.ReadAll(post.Body)
+	body, err := io.ReadAll(post.Body)
 	var bd Ret
 	err = json.Unmarshal(body, &bd)
 	if bd.Data == nil {
@@ -78,7 +78,7 @@ func TagToPic(base64Pic string, msgID int64, isGroup bool, userID int64) (string
 		front = "[CQ:reply,id=" + strconv.FormatInt(msgID, 10) + "]" + "[CQ:at,qq=" + strconv.FormatInt(userID, 10) + "]" + " [CQ:at,qq=" + strconv.FormatInt(userID, 10) + "] "
 	}
 	tags := strings.ReplaceAll(bd.Data[1], "\\", "")
-	pic, err := GetPic(tags, "", "Landscape", "0", "")
+	pic, err := GetPicFree(tags, "", "Landscape", "0", "")
 	if err != nil {
 		return "", err
 	}

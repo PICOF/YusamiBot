@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Lealra/HZYS"
 	"Lealra/JMComic"
 	"Lealra/aiTalk"
 	"Lealra/aiVoice"
@@ -174,7 +175,7 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 	if res != "" {
 		return res, err
 	}
-	res, err = GetTag(mjson, ws, true)
+	res, err = GetTag(mjson, true)
 	if res != "" {
 		return res, err
 	}
@@ -182,7 +183,15 @@ func groupHandler(mjson returnStruct.Message, ws *websocket.Conn) (string, error
 	if res != "" {
 		return res, err
 	}
+	res, err = HZYS.Generate(mjson)
+	if res != "" || err != nil {
+		return res, err
+	}
 	res, err = funnyReply.ReplyHandler(mjson)
+	if res != "" {
+		return res, err
+	}
+	res, err = aiTalk.CommGenerate(mjson)
 	if res != "" {
 		return res, err
 	}

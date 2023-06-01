@@ -33,10 +33,14 @@ auth:
   admin:
     - 1730483316 # 管理员账号
 aiPaint:
-  api: http://91.216.169.75:5010 # 这个功能一开始嫖的别人的，但是好像最近那边的图片获取不太稳定，会考虑把这个功能修复一下
-  token:
-    - Njm2KthPDsS4nY1lLpOIF7EwzdoBaiGX
-    - gjeAFROY9c3N4tWK6GCbnLsyMIoH8q0U
+  free:
+    api: http://91.216.169.75:5010 # 这个功能一开始嫖的别人的，但是好像最近那边的图片获取不太稳定，会考虑把这个功能修复一下
+    token:
+      - Njm2KthPDsS4nY1lLpOIF7EwzdoBaiGX
+      - gjeAFROY9c3N4tWK6GCbnLsyMIoH8q0U
+  colab:
+    api: http://gzuu3nb4b3f4xb7m6hoih6yfptv7ws6slx5cd5m6qt63xdpeva3q.remote.moe/
+    model:
 bangumi:
   bangumiSearch: true # 是否开启相关功能
   maxPoolSize: 3 # 同一时间的最大搜索数，所有组群共用
@@ -45,7 +49,7 @@ setu:
   setuGroupSender: true # 是否能群发，现在改了显示方式已经没有多少被封杀的可能了
   api: https://api.lolicon.app/setu/v2 # https://lolisuki.cc/api/setu/v1
 openAi:
-  token: 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 #your token
+  token: #your token
   retries: 3 # 失败后重试次数
   settings: # 详细配置见官方 api 文档
     chat:
@@ -58,6 +62,10 @@ openAi:
       presencePenalty: 0.6
     edit:
       model: code-davinci-edit-001
+    comm:
+      preset: "你现在是一名在QQ群聊里的群友，你是一名萝莉控，你遇到疑惑的事情很大概率会说“？”或者“顶针？”，当你对某件事感到惊讶时可能会在你说的话前面加“我草”或者只说“草”或者说“6”，你觉得某件事情很有意思时有概率会只说“草”，你觉得某件事情很怪时有概率会只说“太怪了”，你觉得对方是傻逼时有概率会只说“都让你糖丸了”或者“唐”，当你被什么东西逗笑了会说“xswl”或者“笑死我了”，对对方不满想辱骂对方时有概率会说“你妈死了！”，你的发言一般较为简短（一般不超过20字），以下是几位群友的聊天记录，请你按照格式发送一句回复"
+      msgCap: 5 # 用于当作示例的群友聊天记录
+      maxLen: 20 # 过滤群聊中太长的消息
 characterAi:
   token: # 你的 characterAi 的账户 token，不填写默认使用游客登录（每次会话最多七句）
   timeout: 10 #人格选择过期时间，单位秒
@@ -70,7 +78,9 @@ learnAndResponse:
   compress: true #是否对获取到的数据进行压缩，采用的是 zlib 压缩，可以节省存储空间
 daoli:
   maxTime: 100 # 语句生成的最大迭代次数
-  expiration: 48 # 消息过期时间，单位是小时
+  expiration: 0.01 # 消息过期时间，单位是小时
+hzys:
+  sourceDir: "./voice_pack"
 bilibili:
   status: true # 是否开启，true 开启 false 关闭
   interval: 1 # 单位 s，扫描爬取每个 up 的时间间隔，会上下浮动 0.5 秒
